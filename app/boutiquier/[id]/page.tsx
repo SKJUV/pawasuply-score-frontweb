@@ -10,12 +10,13 @@ import type { Boutiquier, ScoreHistoryPoint, ScoreUpdatedEvent } from '@/lib/typ
 import Spinner from '@/components/Spinner';
 import ErrorAlert from '@/components/ErrorAlert';
 import CategoryBadge from '@/components/CategoryBadge';
+import { IconArrowLeft, IconLive } from '@/components/icons';
 import { formatAmount, formatDateTime, CREDIT_STATUS_STYLE } from '@/lib/format';
 
 const ScoreLineChart = dynamic(() => import('@/components/charts/ScoreLineChart'), { ssr: false });
 
 function ScoreRing({ score }: { score: number }) {
-  const r = 40;
+  const r    = 40;
   const circ = 2 * Math.PI * r;
   const fill = (score / 100) * circ;
   const color =
@@ -25,7 +26,7 @@ function ScoreRing({ score }: { score: number }) {
 
   return (
     <div className="relative flex h-28 w-28 items-center justify-center">
-      <svg className="-rotate-90" width="112" height="112" viewBox="0 0 96 96">
+      <svg className="-rotate-90" width="112" height="112" viewBox="0 0 96 96" aria-hidden="true">
         <circle cx="48" cy="48" r={r} fill="none" stroke="#ede9fe" strokeWidth="8" />
         <circle
           cx="48" cy="48" r={r} fill="none"
@@ -36,7 +37,7 @@ function ScoreRing({ score }: { score: number }) {
         />
       </svg>
       <div className="absolute flex flex-col items-center">
-        <span className="text-2xl font-extrabold text-violet-900">{score.toFixed(0)}</span>
+        <span className="text-2xl font-extrabold text-violet-900 tabular-nums">{score.toFixed(0)}</span>
         <span className="text-xs text-zinc-400">/100</span>
       </div>
     </div>
@@ -67,18 +68,14 @@ export default function BoutiquierProfilePage() {
     if (!id) return;
     const socket = getSocket();
     socket.emit('join:boutiquier', id);
-
     const handle = ({ boutiquierId, finalScore, category, creditLimit }: ScoreUpdatedEvent) => {
       if (boutiquierId !== id) return;
       setBoutiquier((prev) =>
-        prev
-          ? { ...prev, current_score: String(finalScore), category, credit_limit: String(creditLimit) }
-          : prev
+        prev ? { ...prev, current_score: String(finalScore), category, credit_limit: String(creditLimit) } : prev
       );
       setLiveAlert(`Score mis à jour : ${finalScore} · ${category}`);
       setTimeout(() => setLiveAlert(null), 6000);
     };
-
     socket.on('score:updated', handle);
     return () => { socket.off('score:updated', handle); };
   }, [id]);
@@ -91,71 +88,63 @@ export default function BoutiquierProfilePage() {
       </div>
     );
   }
-
   if (error) return <ErrorAlert message={error} />;
   if (!boutiquier) return null;
 
   const score = parseFloat(boutiquier.current_score);
+  const histScores = history.map((h) => parseFloat(h.score));
 
   return (
     <div className="space-y-6">
+
       {/* Breadcrumb */}
-      <nav className="flex items-center gap-2 text-sm text-zinc-400">
-        <Link href="/bank" className="hover:text-violet-600 transition-colors">Dashboard Banque</Link>
-        <span className="text-zinc-300">/</span>
+      <nav className="flex items-center gap-2 text-sm">
+        <Link href="/bank" className="flex items-center gap-1 text-zinc-400 hover:text-violet-600 transition-colors">
+          <IconArrowLeft size={15} />
+          Dashboard Banque
+        </Link>
+        <span className="text-zinc-200">/</span>
         <span className="font-medium text-violet-700">{boutiquier.name}</span>
       </nav>
 
       {/* Live alert */}
       {liveAlert && (
-        <div className="flex items-center gap-3 rounded-xl border border-violet-200 bg-violet-50 px-4 py-3">
-          <span className="live-dot h-2 w-2 rounded-full bg-violet-500" />
-          <p className="text-sm font-semibold text-violet-700">🔴 {liveAlert}</p>
+        <div className="flex items-center gap-2.5 rounded-xl border border-violet-200 bg-violet-50 px-4 py-3">
+          <IconLive className="live-dot shrink-0 text-violet-500" size={7} />
+          <p className="text-sm font-semibold text-violet-700">{liveAlert}</p>
         </div>
       )}
 
-      {/* Profile hero */}
+      {/* Profile card */}
       <div className="card overflow-hidden">
-        {/* Top accent bar */}
-        <div className="h-1.5 w-full gradient-bg" />
-
+        <div className="h-1 w-full gradient-bg" />
         <div className="flex flex-wrap items-center gap-6 p-6">
-          {/* Score ring */}
           <ScoreRing score={score} />
-
-          {/* Info */}
           <div className="flex-1">
             <div className="flex flex-wrap items-start gap-3">
               <div>
-                <h1 className="text-2xl font-extrabold text-violet-900">{boutiquier.name}</h1>
+                <h1 className="text-xl font-extrabold text-violet-900">{boutiquier.name}</h1>
                 <p className="font-mono text-sm text-zinc-400">{boutiquier.phone_number}</p>
                 <p className="mt-0.5 font-mono text-xs text-zinc-300">{boutiquier.id}</p>
               </div>
               <div className="flex items-center gap-2">
                 <CategoryBadge category={boutiquier.category} />
-                <span
-                  className="flex items-center gap-1.5 rounded-full border border-violet-100 bg-violet-50 px-2.5 py-1 text-xs font-medium text-violet-600"
-                  title="Suivi temps réel actif"
-                >
-                  <span className="live-dot h-1.5 w-1.5 rounded-full bg-violet-500" /> Live
+                <span className="flex items-center gap-1.5 rounded-full border border-violet-100 bg-violet-50 px-2.5 py-1 text-xs font-medium text-violet-600">
+                  <IconLive className="live-dot text-violet-500" size={7} />
+                  Live
                 </span>
               </div>
             </div>
           </div>
-
-          {/* Stats */}
-          <div className="flex gap-4">
-            <div className="rounded-2xl border border-violet-100 bg-violet-50 px-5 py-4 text-center">
+          <div className="flex gap-3">
+            <div className="rounded-xl border border-violet-100 bg-violet-50 px-5 py-4 text-center">
               <p className="text-xs font-semibold uppercase tracking-wider text-zinc-400">Limite crédit</p>
-              <p className="mt-1 text-lg font-bold text-violet-700">{formatAmount(boutiquier.credit_limit)}</p>
+              <p className="mt-1 font-bold text-violet-700 tabular-nums">{formatAmount(boutiquier.credit_limit)}</p>
             </div>
-            <div className="rounded-2xl border border-zinc-100 bg-zinc-50 px-5 py-4 text-center">
+            <div className="rounded-xl border border-zinc-100 bg-zinc-50 px-5 py-4 text-center">
               <p className="text-xs font-semibold uppercase tracking-wider text-zinc-400">Depuis</p>
               <p className="mt-1 text-sm font-semibold text-zinc-700">
                 {new Date(boutiquier.created_at).toLocaleDateString('fr-FR', { timeZone: 'Africa/Douala' })}
-              </p>
-              <p className="text-xs text-zinc-400">
-                Màj {new Date(boutiquier.updated_at).toLocaleDateString('fr-FR', { timeZone: 'Africa/Douala' })}
               </p>
             </div>
           </div>
@@ -164,23 +153,23 @@ export default function BoutiquierProfilePage() {
 
       {/* Active credit */}
       {boutiquier.activeCredit ? (
-        <div className="card p-6">
+        <div className="card p-5">
           <div className="mb-4 flex items-center justify-between">
             <p className="text-sm font-bold text-violet-900">Crédit en cours</p>
             <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${CREDIT_STATUS_STYLE[boutiquier.activeCredit.status] ?? 'bg-zinc-100 text-zinc-500'}`}>
               {boutiquier.activeCredit.status}
             </span>
           </div>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             {[
-              { label: 'Montant',    value: formatAmount(boutiquier.activeCredit.amount) },
-              { label: 'Grossiste',  value: boutiquier.activeCredit.grossiste_name },
-              { label: 'Échéance',   value: formatDateTime(boutiquier.activeCredit.due_date) },
-              { label: 'Credit ID',  value: boutiquier.activeCredit.id, mono: true },
+              { label: 'Montant',   value: formatAmount(boutiquier.activeCredit.amount) },
+              { label: 'Grossiste', value: boutiquier.activeCredit.grossiste_name },
+              { label: 'Échéance',  value: formatDateTime(boutiquier.activeCredit.due_date) },
+              { label: 'Credit ID', value: boutiquier.activeCredit.id, mono: true },
             ].map(({ label, value, mono }) => (
               <div key={label} className="rounded-xl bg-violet-50/60 p-4">
                 <p className="text-xs font-semibold uppercase tracking-wider text-zinc-400">{label}</p>
-                <p className={`mt-1.5 text-sm font-semibold text-violet-900 break-all ${mono ? 'font-mono text-xs text-zinc-400' : ''}`}>
+                <p className={`mt-1.5 break-all text-sm font-semibold ${mono ? 'font-mono text-xs text-zinc-400' : 'text-violet-900'}`}>
                   {value}
                 </p>
               </div>
@@ -188,39 +177,35 @@ export default function BoutiquierProfilePage() {
           </div>
         </div>
       ) : (
-        <div className="card flex items-center gap-3 p-5">
-          <span className="text-2xl">💤</span>
-          <p className="text-sm text-zinc-400">Aucun crédit actif ou en attente de livraison.</p>
+        <div className="card flex items-center gap-3 p-5 text-sm text-zinc-400">
+          Aucun crédit actif ou en attente de livraison.
         </div>
       )}
 
       {/* Score history */}
-      <div className="card p-6">
+      <div className="card p-5">
         <div className="mb-5 flex items-center justify-between">
           <div>
             <p className="text-sm font-bold text-violet-900">Historique des scores</p>
-            <p className="text-xs text-zinc-400">{history.length} point{history.length > 1 ? 's' : ''} · 90 derniers enregistrements</p>
+            <p className="text-xs text-zinc-400">
+              {history.length} enregistrement{history.length > 1 ? 's' : ''} · 90 derniers
+            </p>
           </div>
-          {history.length > 0 && (
-            <div className="flex items-center gap-3 text-xs text-zinc-400">
-              <span>
-                Min <strong className="text-zinc-600">{Math.min(...history.map(h => parseFloat(h.score))).toFixed(0)}</strong>
-              </span>
-              <span>
-                Max <strong className="text-violet-700">{Math.max(...history.map(h => parseFloat(h.score))).toFixed(0)}</strong>
-              </span>
+          {histScores.length > 0 && (
+            <div className="flex items-center gap-4 text-xs text-zinc-400">
+              <span>Min <strong className="text-zinc-600 tabular-nums">{Math.min(...histScores).toFixed(0)}</strong></span>
+              <span>Max <strong className="text-violet-700 tabular-nums">{Math.max(...histScores).toFixed(0)}</strong></span>
             </div>
           )}
         </div>
-        {history.length > 0 ? (
-          <ScoreLineChart history={history} />
-        ) : (
-          <div className="flex flex-col items-center justify-center gap-2 py-12 text-zinc-300">
-            <span className="text-4xl">📉</span>
-            <p className="text-sm">Aucun historique disponible.</p>
-          </div>
-        )}
+        {history.length > 0
+          ? <ScoreLineChart history={history} />
+          : <div className="flex flex-col items-center justify-center gap-2 py-12 text-zinc-300">
+              <p className="text-sm">Aucun historique disponible.</p>
+            </div>
+        }
       </div>
+
     </div>
   );
 }

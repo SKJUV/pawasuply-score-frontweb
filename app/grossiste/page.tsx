@@ -7,6 +7,7 @@ import type { Grossiste, GrossisteOrder, PendingOrder, PayoutCompletedEvent } fr
 import Spinner from '@/components/Spinner';
 import ErrorAlert from '@/components/ErrorAlert';
 import SectionHeader from '@/components/SectionHeader';
+import { IconCheck, IconClock, IconLive } from '@/components/icons';
 import { formatAmount, formatDateTime } from '@/lib/format';
 
 const PROVIDER_LABEL: Record<string, string> = {
@@ -14,21 +15,29 @@ const PROVIDER_LABEL: Record<string, string> = {
   ORANGE_CMR:   'Orange Money',
 };
 
-const PROVIDER_COLOR: Record<string, string> = {
-  MTN_MOMO_CMR: 'bg-yellow-100 text-yellow-700 ring-1 ring-yellow-200',
-  ORANGE_CMR:   'bg-orange-100 text-orange-700 ring-1 ring-orange-200',
+const PROVIDER_STYLE: Record<string, string> = {
+  MTN_MOMO_CMR: 'bg-yellow-50 text-yellow-700 ring-1 ring-yellow-200',
+  ORANGE_CMR:   'bg-orange-50 text-orange-700 ring-1 ring-orange-200',
 };
 
+function EmptyRow({ label }: { label: string }) {
+  return (
+    <div className="flex flex-col items-center justify-center gap-2 py-12 text-zinc-300">
+      <p className="text-sm">{label}</p>
+    </div>
+  );
+}
+
 export default function GrossistePage() {
-  const [grossistes,   setGrossistes]   = useState<Grossiste[]>([]);
-  const [selected,     setSelected]     = useState<string>('');
-  const [orders,       setOrders]       = useState<GrossisteOrder[]>([]);
-  const [pending,      setPending]      = useState<PendingOrder[]>([]);
-  const [days,         setDays]         = useState(30);
-  const [loading,      setLoading]      = useState(false);
-  const [initLoading,  setInitLoading]  = useState(true);
-  const [error,        setError]        = useState<string | null>(null);
-  const [toast,        setToast]        = useState<string | null>(null);
+  const [grossistes,  setGrossistes]  = useState<Grossiste[]>([]);
+  const [selected,    setSelected]    = useState('');
+  const [orders,      setOrders]      = useState<GrossisteOrder[]>([]);
+  const [pending,     setPending]     = useState<PendingOrder[]>([]);
+  const [days,        setDays]        = useState(30);
+  const [loading,     setLoading]     = useState(false);
+  const [initLoading, setInitLoading] = useState(true);
+  const [error,       setError]       = useState<string | null>(null);
+  const [toast,       setToast]       = useState<string | null>(null);
 
   useEffect(() => {
     apiFetch<Grossiste[]>('/grossistes')
@@ -57,7 +66,6 @@ export default function GrossistePage() {
 
   useEffect(() => { if (selected) loadOrders(selected, days); }, [selected, days, loadOrders]);
 
-  // Socket.io
   useEffect(() => {
     if (!selected) return;
     const socket = getSocket();
@@ -68,7 +76,7 @@ export default function GrossistePage() {
       ]);
       if (o) setOrders(o);
       if (p) setPending(p);
-      setToast(`Livraison confirmée pour boutiquier ${boutiquierId.slice(0, 8)}…`);
+      setToast(`Livraison confirmée — boutiquier ${boutiquierId.slice(0, 8)}…`);
       setTimeout(() => setToast(null), 5000);
     };
     socket.on('payout:completed', handle);
@@ -88,12 +96,13 @@ export default function GrossistePage() {
 
   return (
     <div className="space-y-8">
+
       <SectionHeader
         title="Dashboard Grossiste"
         sub="Commandes et livraisons Mobile Money"
         right={
-          <div className="flex items-center gap-2 rounded-full border border-violet-100 bg-violet-50 px-3 py-1.5 text-xs text-violet-600">
-            <span className="live-dot h-1.5 w-1.5 rounded-full bg-violet-500" />
+          <div className="flex items-center gap-1.5 rounded-full border border-violet-100 bg-violet-50 px-3 py-1.5 text-xs font-medium text-violet-600">
+            <IconLive className="live-dot text-violet-500" size={7} />
             Mises à jour en direct
           </div>
         }
@@ -103,13 +112,13 @@ export default function GrossistePage() {
 
       {/* Toast */}
       {toast && (
-        <div className="flex items-center gap-3 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3">
-          <span className="text-lg">🎉</span>
+        <div className="flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3">
+          <IconCheck className="text-emerald-500" size={16} />
           <p className="text-sm font-medium text-emerald-700">{toast}</p>
         </div>
       )}
 
-      {/* Selector + info */}
+      {/* Controls */}
       <div className="card flex flex-wrap items-end gap-5 p-5">
         <div className="flex flex-col gap-1.5">
           <label className="text-xs font-semibold uppercase tracking-wider text-zinc-400">
@@ -118,7 +127,7 @@ export default function GrossistePage() {
           <select
             value={selected}
             onChange={(e) => setSelected(e.target.value)}
-            className="rounded-xl border border-violet-200 bg-violet-50/50 px-3.5 py-2.5 text-sm font-medium text-violet-900 outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
+            className="rounded-xl border border-violet-200 bg-violet-50/40 px-3.5 py-2.5 text-sm font-medium text-violet-900 outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
           >
             {grossistes.map((g) => (
               <option key={g.id} value={g.id}>
@@ -135,21 +144,19 @@ export default function GrossistePage() {
           <select
             value={days}
             onChange={(e) => setDays(parseInt(e.target.value))}
-            className="rounded-xl border border-violet-200 bg-violet-50/50 px-3.5 py-2.5 text-sm font-medium text-violet-900 outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
+            className="rounded-xl border border-violet-200 bg-violet-50/40 px-3.5 py-2.5 text-sm font-medium text-violet-900 outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
           >
             {[1, 7, 14, 30, 90].map((d) => (
-              <option key={d} value={d}>
-                {d === 1 ? "Aujourd'hui" : `${d} derniers jours`}
-              </option>
+              <option key={d} value={d}>{d === 1 ? "Aujourd'hui" : `${d} derniers jours`}</option>
             ))}
           </select>
         </div>
 
         {selectedGrossiste && (
           <div className="ml-auto flex items-center gap-3">
-            <div className={`rounded-full px-3 py-1 text-xs font-semibold ${PROVIDER_COLOR[selectedGrossiste.mmo_provider] ?? 'bg-zinc-100 text-zinc-500'}`}>
+            <span className={`rounded-full px-3 py-1 text-xs font-semibold ${PROVIDER_STYLE[selectedGrossiste.mmo_provider] ?? 'bg-zinc-100 text-zinc-500'}`}>
               {PROVIDER_LABEL[selectedGrossiste.mmo_provider] ?? selectedGrossiste.mmo_provider}
-            </div>
+            </span>
             <div className="text-right">
               <p className="text-sm font-bold text-violet-900">{selectedGrossiste.name}</p>
               <p className="font-mono text-xs text-zinc-400">{selectedGrossiste.phone_number}</p>
@@ -158,31 +165,27 @@ export default function GrossistePage() {
         )}
       </div>
 
-      {/* Summary KPIs */}
+      {/* Summary */}
       {!loading && (
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="card flex items-center gap-4 p-5">
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-50 text-2xl">
-              ⏳
+            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-amber-50 text-amber-500">
+              <IconClock size={20} />
             </div>
             <div>
-              <p className="text-xs font-semibold uppercase tracking-wider text-zinc-400">
-                En attente
-              </p>
-              <p className="text-2xl font-bold text-amber-600">{pending.length}</p>
-              <p className="text-xs text-zinc-400">commande{pending.length > 1 ? 's' : ''} PENDING_DELIVERY</p>
+              <p className="text-xs font-semibold uppercase tracking-wider text-zinc-400">En attente</p>
+              <p className="text-2xl font-bold text-amber-600 tabular-nums">{pending.length}</p>
+              <p className="text-xs text-zinc-400">PENDING_DELIVERY</p>
             </div>
           </div>
           <div className="card flex items-center gap-4 p-5">
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-50 text-2xl">
-              ✅
+            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-50 text-emerald-500">
+              <IconCheck size={20} />
             </div>
             <div>
-              <p className="text-xs font-semibold uppercase tracking-wider text-zinc-400">
-                Livrées
-              </p>
-              <p className="text-2xl font-bold text-emerald-600">{orders.length}</p>
-              <p className="text-xs text-zinc-400">commande{orders.length > 1 ? 's' : ''} COMPLETED sur la période</p>
+              <p className="text-xs font-semibold uppercase tracking-wider text-zinc-400">Livrées</p>
+              <p className="text-2xl font-bold text-emerald-600 tabular-nums">{orders.length}</p>
+              <p className="text-xs text-zinc-400">COMPLETED sur la période</p>
             </div>
           </div>
         </div>
@@ -195,12 +198,12 @@ export default function GrossistePage() {
         </div>
       ) : (
         <>
-          {/* Pending */}
+          {/* Pending table */}
           <div className="card overflow-hidden">
-            <div className="flex items-center justify-between border-b border-violet-50 px-6 py-4">
+            <div className="flex items-center justify-between border-b border-violet-50 px-5 py-4">
               <div>
                 <p className="text-sm font-bold text-violet-900">En attente de livraison</p>
-                <p className="text-xs text-zinc-400">Payouts acceptés, en attente de confirmation opérateur</p>
+                <p className="text-xs text-zinc-400">Payouts acceptés, confirmation opérateur en cours</p>
               </div>
               {pending.length > 0 && (
                 <span className="rounded-full bg-amber-100 px-2.5 py-1 text-xs font-bold text-amber-700">
@@ -208,23 +211,16 @@ export default function GrossistePage() {
                 </span>
               )}
             </div>
-
             {pending.length === 0 ? (
-              <div className="flex flex-col items-center justify-center gap-2 py-12 text-zinc-300">
-                <span className="text-4xl">✨</span>
-                <p className="text-sm">Aucune commande en attente</p>
-              </div>
+              <EmptyRow label="Aucune commande en attente" />
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-violet-50">
-                      <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-zinc-400">Boutiquier</th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-zinc-400">Téléphone</th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-zinc-400">Opérateur</th>
-                      <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-zinc-400">Montant</th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-zinc-400">Statut</th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-zinc-400">Date</th>
+                      {['Boutiquier', 'Téléphone', 'Opérateur', 'Montant', 'Statut', 'Date'].map((h) => (
+                        <th key={h} className={`px-4 py-3 text-xs font-semibold uppercase tracking-wider text-zinc-400 ${h === 'Montant' ? 'text-right' : 'text-left'}`}>{h}</th>
+                      ))}
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-violet-50">
@@ -233,11 +229,11 @@ export default function GrossistePage() {
                         <td className="px-4 py-3.5 font-semibold text-violet-900">{p.boutiquier_name}</td>
                         <td className="px-4 py-3.5 font-mono text-xs text-zinc-400">{p.phone_number}</td>
                         <td className="px-4 py-3.5">
-                          <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${PROVIDER_COLOR[p.provider] ?? 'bg-zinc-100 text-zinc-500'}`}>
+                          <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${PROVIDER_STYLE[p.provider] ?? 'bg-zinc-100 text-zinc-500'}`}>
                             {PROVIDER_LABEL[p.provider] ?? p.provider}
                           </span>
                         </td>
-                        <td className="px-4 py-3.5 text-right font-bold text-amber-700">
+                        <td className="px-4 py-3.5 text-right font-bold tabular-nums text-amber-700">
                           {formatAmount(p.amount)}
                         </td>
                         <td className="px-4 py-3.5">
@@ -254,9 +250,9 @@ export default function GrossistePage() {
             )}
           </div>
 
-          {/* Completed */}
+          {/* Completed table */}
           <div className="card overflow-hidden">
-            <div className="flex items-center justify-between border-b border-violet-50 px-6 py-4">
+            <div className="flex items-center justify-between border-b border-violet-50 px-5 py-4">
               <div>
                 <p className="text-sm font-bold text-violet-900">Commandes livrées</p>
                 <p className="text-xs text-zinc-400">Payouts COMPLETED sur la période sélectionnée</p>
@@ -267,22 +263,16 @@ export default function GrossistePage() {
                 </span>
               )}
             </div>
-
             {orders.length === 0 ? (
-              <div className="flex flex-col items-center justify-center gap-2 py-12 text-zinc-300">
-                <span className="text-4xl">📭</span>
-                <p className="text-sm">Aucune commande sur cette période</p>
-              </div>
+              <EmptyRow label="Aucune commande sur cette période" />
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-violet-50">
-                      <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-zinc-400">Boutiquier</th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-zinc-400">Téléphone</th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-zinc-400">Opérateur</th>
-                      <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-zinc-400">Montant</th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-zinc-400">Date</th>
+                      {['Boutiquier', 'Téléphone', 'Opérateur', 'Montant', 'Date'].map((h) => (
+                        <th key={h} className={`px-4 py-3 text-xs font-semibold uppercase tracking-wider text-zinc-400 ${h === 'Montant' ? 'text-right' : 'text-left'}`}>{h}</th>
+                      ))}
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-violet-50">
@@ -291,11 +281,11 @@ export default function GrossistePage() {
                         <td className="px-4 py-3.5 font-semibold text-violet-900">{o.boutiquier_name}</td>
                         <td className="px-4 py-3.5 font-mono text-xs text-zinc-400">{o.boutiquier_phone}</td>
                         <td className="px-4 py-3.5">
-                          <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${PROVIDER_COLOR[o.provider] ?? 'bg-zinc-100 text-zinc-500'}`}>
+                          <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${PROVIDER_STYLE[o.provider] ?? 'bg-zinc-100 text-zinc-500'}`}>
                             {PROVIDER_LABEL[o.provider] ?? o.provider}
                           </span>
                         </td>
-                        <td className="px-4 py-3.5 text-right font-bold text-emerald-700">
+                        <td className="px-4 py-3.5 text-right font-bold tabular-nums text-emerald-700">
                           {formatAmount(o.amount)}
                         </td>
                         <td className="px-4 py-3.5 text-xs text-zinc-400">{formatDateTime(o.created_at)}</td>
