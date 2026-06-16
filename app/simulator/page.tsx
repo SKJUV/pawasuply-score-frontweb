@@ -6,16 +6,14 @@ import type { DepositResponse, PayoutResponse, RepaymentResponse } from '@/lib/t
 import Spinner from '@/components/Spinner';
 import WalletLimitAlert from '@/components/WalletLimitAlert';
 import SectionHeader from '@/components/SectionHeader';
-import {
-  IconCheck, IconX, IconSend, IconDownload, IconRefresh, IconWarning,
-} from '@/components/icons';
+import { IconCheck, IconX, IconSend, IconRefresh, IconWarning } from '@/components/icons';
 
-const DEMO_BOUTIQUIER_A  = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa';
-const DEMO_BOUTIQUIER_B  = 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb';
-const DEMO_GROSSISTE_MTN = 'b0000000-0000-0000-0000-000000000001';
-const DEMO_GROSSISTE_ORA = 'b0000000-0000-0000-0000-000000000002';
-const PHONE_SUCCESS      = '237653456789';
-const PHONE_INSUF        = '237653456049';
+const DEMO_A  = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa';
+const DEMO_B  = 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb';
+const G_MTN   = 'b0000000-0000-0000-0000-000000000001';
+const G_ORA   = 'b0000000-0000-0000-0000-000000000002';
+const PH_OK   = '237653456789';
+const PH_INSUF = '237653456049';
 
 type ResultState =
   | { type: 'deposit';   data: DepositResponse }
@@ -24,24 +22,24 @@ type ResultState =
   | { type: 'walletLimit' }
   | { type: 'error';     message: string };
 
-type ActionVariant = 'green' | 'red' | 'violet' | 'orange' | 'purple';
+type Variant = 'green' | 'red' | 'violet' | 'orange' | 'purple';
 
 interface ActionDef {
   id:          string;
   label:       string;
   description: string;
   category:    string;
-  variant:     ActionVariant;
+  variant:     Variant;
   Icon:        React.ComponentType<{ size?: number; className?: string }>;
   run:         (amount: number, creditId: string) => Promise<ResultState>;
 }
 
-const variantStyles: Record<ActionVariant, { card: string; icon: string }> = {
-  green:  { card: 'border-emerald-200 bg-white   hover:bg-emerald-50/60', icon: 'bg-emerald-50 text-emerald-600' },
-  red:    { card: 'border-red-200     bg-white   hover:bg-red-50/60',     icon: 'bg-red-50 text-red-500' },
-  violet: { card: 'border-violet-200  bg-white   hover:bg-violet-50/60',  icon: 'bg-violet-50 text-violet-600' },
-  orange: { card: 'border-orange-200  bg-white   hover:bg-orange-50/60',  icon: 'bg-orange-50 text-orange-600' },
-  purple: { card: 'border-purple-200  bg-white   hover:bg-purple-50/60',  icon: 'bg-purple-50 text-purple-600' },
+const variantCard: Record<Variant, { border: string; iconBg: string }> = {
+  green:  { border: 'border-emerald-200 hover:border-emerald-300 hover:bg-emerald-50/40', iconBg: 'bg-emerald-50 text-emerald-600' },
+  red:    { border: 'border-red-200     hover:border-red-300     hover:bg-red-50/40',     iconBg: 'bg-red-50 text-red-500' },
+  violet: { border: 'border-violet-200  hover:border-violet-300  hover:bg-violet-50/40',  iconBg: 'bg-violet-50 text-violet-600' },
+  orange: { border: 'border-orange-200  hover:border-orange-300  hover:bg-orange-50/40',  iconBg: 'bg-orange-50 text-orange-600' },
+  purple: { border: 'border-purple-200  hover:border-purple-300  hover:bg-purple-50/40',  iconBg: 'bg-purple-50 text-purple-600' },
 };
 
 export default function SimulatorPage() {
@@ -52,50 +50,50 @@ export default function SimulatorPage() {
 
   const actions: ActionDef[] = [
     {
-      id: 'deposit-ok', label: 'Dépôt réussi', category: 'Dépôts',
-      description: 'PIN validé → COMPLETED, score amélioré',
+      id: 'deposit-ok',   label: 'Dépôt réussi',        category: 'Dépôts Mobile Money',
+      description: 'PIN validé → COMPLETED · score amélioré',
       variant: 'green', Icon: IconCheck,
       run: async (amount) => ({ type: 'deposit', data: await apiFetch<DepositResponse>('/deposits', {
         method: 'POST',
-        body: JSON.stringify({ boutiquierId: DEMO_BOUTIQUIER_A, phoneRaw: PHONE_SUCCESS, amount, currency: 'XAF' }),
+        body: JSON.stringify({ boutiquierId: DEMO_A, phoneRaw: PH_OK, amount, currency: 'XAF' }),
       }) }),
     },
     {
-      id: 'deposit-fail', label: 'Solde insuffisant', category: 'Dépôts',
-      description: 'INSUFFICIENT_BALANCE → score pénalisé',
+      id: 'deposit-fail', label: 'Solde insuffisant',    category: 'Dépôts Mobile Money',
+      description: 'INSUFFICIENT_BALANCE → fréquence pénalisée',
       variant: 'red', Icon: IconX,
       run: async (amount) => ({ type: 'deposit', data: await apiFetch<DepositResponse>('/deposits', {
         method: 'POST',
-        body: JSON.stringify({ boutiquierId: DEMO_BOUTIQUIER_A, phoneRaw: PHONE_INSUF, amount, currency: 'XAF' }),
+        body: JSON.stringify({ boutiquierId: DEMO_A, phoneRaw: PH_INSUF, amount, currency: 'XAF' }),
       }) }),
     },
     {
-      id: 'payout-mtn', label: 'Payout MTN', category: 'Payouts',
-      description: '50 000 XAF → Socada MTN (PENDING_DELIVERY)',
+      id: 'payout-mtn',   label: 'Payout MTN',           category: 'Payouts Crédit Stock',
+      description: '50 000 XAF → Socada MTN · PENDING_DELIVERY',
       variant: 'violet', Icon: IconSend,
       run: async () => ({ type: 'payout', data: await apiFetch<PayoutResponse>('/payouts', {
         method: 'POST',
-        body: JSON.stringify({ boutiquierId: DEMO_BOUTIQUIER_B, grossisteId: DEMO_GROSSISTE_MTN, amount: 50000, currency: 'XAF' }),
+        body: JSON.stringify({ boutiquierId: DEMO_B, grossisteId: G_MTN, amount: 50000, currency: 'XAF' }),
       }) }),
     },
     {
-      id: 'payout-orange', label: 'Payout Orange', category: 'Payouts',
+      id: 'payout-orange', label: 'Payout Orange',       category: 'Payouts Crédit Stock',
       description: '50 000 XAF → Congelcam Orange Money',
       variant: 'orange', Icon: IconSend,
       run: async () => ({ type: 'payout', data: await apiFetch<PayoutResponse>('/payouts', {
         method: 'POST',
-        body: JSON.stringify({ boutiquierId: DEMO_BOUTIQUIER_B, grossisteId: DEMO_GROSSISTE_ORA, amount: 50000, currency: 'XAF' }),
+        body: JSON.stringify({ boutiquierId: DEMO_B, grossisteId: G_ORA, amount: 50000, currency: 'XAF' }),
       }) }),
     },
     {
-      id: 'repayment', label: 'Remboursement', category: 'Remboursements',
-      description: 'Initie le remboursement d\'un crédit ACTIVE',
+      id: 'repayment',   label: 'Remboursement crédit',  category: 'Remboursements',
+      description: 'Rembourser un crédit ACTIVE — saisir le Credit ID ci-dessus',
       variant: 'purple', Icon: IconRefresh,
       run: async (amount, creditId) => {
         if (!creditId.trim()) throw new Error('Veuillez saisir un Credit ID valide');
         return { type: 'repayment', data: await apiFetch<RepaymentResponse>('/repayments', {
           method: 'POST',
-          body: JSON.stringify({ boutiquierId: DEMO_BOUTIQUIER_A, creditId: creditId.trim(), amount, currency: 'XAF', phoneRaw: PHONE_SUCCESS }),
+          body: JSON.stringify({ boutiquierId: DEMO_A, creditId: creditId.trim(), amount, currency: 'XAF', phoneRaw: PH_OK }),
         }) };
       },
     },
@@ -116,11 +114,11 @@ export default function SimulatorPage() {
   const categories = [...new Set(actions.map((a) => a.category))];
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6 sm:space-y-8">
 
       <SectionHeader
-        title="Simulateur"
-        sub="Testez les flux pawaPay sur les boutiquiers de démo (sandbox)"
+        title="Simulateur Sandbox"
+        sub="Testez les flux pawaPay sur les boutiquiers de démo"
       />
 
       {/* Params */}
@@ -128,19 +126,21 @@ export default function SimulatorPage() {
         <p className="mb-4 text-xs font-semibold uppercase tracking-wider text-zinc-400">Paramètres</p>
         <div className="flex flex-wrap gap-4">
           <div className="flex flex-col gap-1.5">
-            <label htmlFor="amount" className="text-xs font-medium text-zinc-500">Montant (XAF)</label>
+            <label htmlFor="sim-amount" className="text-xs font-medium text-zinc-500">Montant (XAF)</label>
             <input
-              id="amount" type="number" value={customAmount} min={100} step={1000}
+              id="sim-amount" type="number" value={customAmount} min={100} step={1000}
               onChange={(e) => setCustomAmount(parseInt(e.target.value) || 0)}
-              className="w-44 rounded-xl border border-violet-200 bg-violet-50/40 px-3.5 py-2.5 text-sm tabular-nums outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
+              className="w-40 rounded-xl border border-violet-200 bg-violet-50/40 px-3 py-2.5 text-sm tabular-nums outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
             />
           </div>
-          <div className="flex flex-col gap-1.5">
-            <label htmlFor="credit-id" className="text-xs font-medium text-zinc-500">Credit ID (remboursement)</label>
+          <div className="flex flex-col gap-1.5 flex-1 min-w-56">
+            <label htmlFor="sim-credit" className="text-xs font-medium text-zinc-500">
+              Credit ID <span className="text-zinc-400">(remboursement)</span>
+            </label>
             <input
-              id="credit-id" type="text" value={customCreditId} placeholder="uuid-credit"
+              id="sim-credit" type="text" value={customCreditId} placeholder="uuid-credit"
               onChange={(e) => setCustomCreditId(e.target.value)}
-              className="w-80 rounded-xl border border-violet-200 bg-violet-50/40 px-3.5 py-2.5 text-sm outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
+              className="w-full rounded-xl border border-violet-200 bg-violet-50/40 px-3 py-2.5 text-sm outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
             />
           </div>
         </div>
@@ -152,22 +152,20 @@ export default function SimulatorPage() {
           <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-zinc-400">{cat}</p>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {actions.filter((a) => a.category === cat).map((action) => {
-              const s = variantStyles[action.variant];
+              const s = variantCard[action.variant];
               return (
                 <button
                   key={action.id}
                   onClick={() => run(action)}
                   disabled={loading !== null}
-                  className={`flex items-start gap-3.5 rounded-2xl border p-4 text-left transition-all duration-150 disabled:cursor-not-allowed disabled:opacity-50 ${s.card}`}
+                  className={`flex items-start gap-3 rounded-2xl border bg-white p-4 text-left transition-all duration-150 disabled:cursor-not-allowed disabled:opacity-50 ${s.border}`}
                 >
-                  <div className={`mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${s.icon}`}>
-                    {loading === action.id
-                      ? <Spinner size="sm" />
-                      : <action.Icon size={17} />}
+                  <div className={`mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${s.iconBg}`}>
+                    {loading === action.id ? <Spinner size="sm" /> : <action.Icon size={17} />}
                   </div>
                   <div>
                     <p className="font-semibold text-zinc-800">{action.label}</p>
-                    <p className="mt-0.5 text-xs text-zinc-500 leading-relaxed">{action.description}</p>
+                    <p className="mt-0.5 text-xs leading-relaxed text-zinc-500">{action.description}</p>
                   </div>
                 </button>
               );
@@ -194,11 +192,7 @@ export default function SimulatorPage() {
           {result.type === 'walletLimit' && <WalletLimitAlert />}
 
           {result.type === 'deposit' && (
-            <div className={`rounded-xl border p-5 ${
-              result.data.status === 'ACCEPTED'
-                ? 'border-emerald-200 bg-emerald-50'
-                : 'border-red-100 bg-red-50'
-            }`}>
+            <div className={`rounded-xl border p-5 ${result.data.status === 'ACCEPTED' ? 'border-emerald-200 bg-emerald-50' : 'border-red-100 bg-red-50'}`}>
               <div className="flex items-center gap-2">
                 {result.data.status === 'ACCEPTED'
                   ? <IconCheck className="text-emerald-600" size={18} />
@@ -207,17 +201,17 @@ export default function SimulatorPage() {
                   Dépôt {result.data.status === 'ACCEPTED' ? 'Accepté' : 'Rejeté'}
                 </p>
               </div>
-              <p className="mt-2 font-mono text-xs text-zinc-400">ID : {result.data.depositId}</p>
-              {result.data.nextStep && <p className="mt-2 text-sm text-emerald-700">{result.data.nextStep}</p>}
-              {result.data.reason && (
-                <div className="mt-2 flex items-center gap-2">
+              <p className="mt-2 break-all font-mono text-xs text-zinc-400">ID : {result.data.depositId}</p>
+              {result.data.nextStep  && <p className="mt-2 text-sm text-emerald-700">{result.data.nextStep}</p>}
+              {result.data.reason    && (
+                <div className="mt-2 flex flex-wrap items-center gap-2">
                   <span className="text-xs font-medium text-red-600">Raison :</span>
                   <code className="rounded-lg bg-red-100 px-2 py-0.5 text-xs font-bold text-red-700">{result.data.reason}</code>
                 </div>
               )}
               {result.data.status === 'ACCEPTED' && (
                 <p className="mt-3 rounded-lg bg-emerald-100 px-3 py-2 text-xs text-emerald-600">
-                  Statut final (COMPLETED / FAILED) arrivera via webhook · Écoutez <code className="font-bold">score:updated</code>
+                  Statut final via webhook · Écoutez <code className="font-bold">score:updated</code> sur Socket.io
                 </p>
               )}
             </div>
@@ -229,9 +223,9 @@ export default function SimulatorPage() {
                 <IconSend className="text-violet-600" size={17} />
                 <p className="font-bold text-violet-800">Payout Accepté</p>
               </div>
-              <p className="mt-2 font-mono text-xs text-zinc-400">ID : {result.data.payoutId}</p>
+              <p className="mt-2 break-all font-mono text-xs text-zinc-400">ID : {result.data.payoutId}</p>
               <p className="mt-3 rounded-lg bg-violet-100 px-3 py-2 text-xs text-violet-600">
-                Crédit créé en <strong>PENDING_DELIVERY</strong> → passera en <strong>ACTIVE</strong> après confirmation webhook (due_date = +14 jours)
+                Crédit <strong>PENDING_DELIVERY</strong> → <strong>ACTIVE</strong> après webhook (due_date = J+14)
               </p>
             </div>
           )}
@@ -243,8 +237,8 @@ export default function SimulatorPage() {
                 <p className="font-bold text-purple-800">Remboursement initié</p>
               </div>
               <div className="mt-2 space-y-0.5">
-                <p className="font-mono text-xs text-zinc-400">Deposit : {result.data.depositId}</p>
-                <p className="font-mono text-xs text-zinc-400">Credit : {result.data.creditId}</p>
+                <p className="break-all font-mono text-xs text-zinc-400">Deposit : {result.data.depositId}</p>
+                <p className="break-all font-mono text-xs text-zinc-400">Credit  : {result.data.creditId}</p>
               </div>
               <p className="mt-2 text-sm text-purple-700">{result.data.nextStep}</p>
             </div>
@@ -253,7 +247,7 @@ export default function SimulatorPage() {
           {result.type !== 'error' && result.type !== 'walletLimit' && (
             <details className="mt-4">
               <summary className="cursor-pointer select-none text-xs font-medium text-zinc-400 hover:text-violet-600 transition-colors">
-                Voir la réponse JSON brute
+                Réponse JSON brute
               </summary>
               <pre className="mt-2 overflow-x-auto rounded-xl bg-zinc-900 p-4 text-xs leading-relaxed text-zinc-100">
                 {JSON.stringify(
@@ -273,8 +267,8 @@ export default function SimulatorPage() {
           <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-zinc-400">Boutiquiers de démo</p>
           <div className="space-y-2 text-xs">
             {[
-              { key: 'A', id: DEMO_BOUTIQUIER_A, info: 'Amadou Diallo · Platine' },
-              { key: 'B', id: DEMO_BOUTIQUIER_B, info: '' },
+              { key: 'A', id: DEMO_A, info: 'Amadou Diallo · Platine' },
+              { key: 'B', id: DEMO_B, info: '' },
             ].map(({ key, id, info }) => (
               <div key={key} className="rounded-lg bg-violet-50 p-3">
                 <span className="font-bold text-violet-700">Boutiquier {key}</span>
@@ -284,21 +278,19 @@ export default function SimulatorPage() {
             ))}
           </div>
         </div>
-
         <div className="card p-5">
           <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-zinc-400">Suffixes téléphone sandbox</p>
           <div className="space-y-2">
             {[
-              { suffix: '…789', label: 'COMPLETED',             style: 'bg-emerald-50 text-emerald-700', Icon: IconCheck },
-              { suffix: '…049', label: 'INSUFFICIENT_BALANCE',  style: 'bg-red-50 text-red-700',         Icon: IconX },
-              { suffix: '…099', label: 'WALLET_LIMIT_REACHED',  style: 'bg-amber-50 text-amber-700',     Icon: IconWarning },
+              { suffix: '…789', label: 'COMPLETED',            style: 'bg-emerald-50 text-emerald-700', Icon: IconCheck },
+              { suffix: '…049', label: 'INSUFFICIENT_BALANCE', style: 'bg-red-50 text-red-700',         Icon: IconX },
+              { suffix: '…099', label: 'WALLET_LIMIT_REACHED', style: 'bg-amber-50 text-amber-700',     Icon: IconWarning },
             ].map(({ suffix, label, style, Icon }) => (
               <div key={suffix} className="flex items-center gap-3 rounded-lg bg-zinc-50 px-3 py-2.5 text-xs">
                 <code className="w-12 shrink-0 text-center font-bold text-zinc-600">{suffix}</code>
                 <span className="text-zinc-300">→</span>
                 <span className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 font-semibold ${style}`}>
-                  <Icon size={12} />
-                  {label}
+                  <Icon size={12} />{label}
                 </span>
               </div>
             ))}

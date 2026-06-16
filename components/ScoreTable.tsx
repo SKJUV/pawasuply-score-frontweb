@@ -10,33 +10,34 @@ export default function ScoreTable({ boutiquiers }: { boutiquiers: BankBoutiquie
   if (boutiquiers.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center gap-2 py-16 text-zinc-300">
-        <IconArrowRight size={32} className="opacity-30" />
         <p className="text-sm">Aucun boutiquier trouvé.</p>
       </div>
     );
   }
 
   return (
+    // min-w ensures horizontal scroll on very small screens
     <div className="overflow-x-auto">
-      <table className="w-full text-sm">
+      <table className="w-full min-w-[640px] text-sm">
         <thead>
           <tr className="border-b border-violet-50">
-            {['Boutiquier', 'Téléphone', 'Score', 'Catégorie', 'Limite', 'Encours actif', 'Crédits', ''].map(
-              (h) => (
-                <th
-                  key={h}
-                  className={`px-4 py-3 text-xs font-semibold uppercase tracking-wider text-zinc-400 ${
-                    h === 'Score' || h === 'Limite' || h === 'Encours actif'
-                      ? 'text-right'
-                      : h === 'Crédits' || h === ''
-                      ? 'text-center'
-                      : 'text-left'
-                  }`}
-                >
-                  {h}
-                </th>
-              )
-            )}
+            {[
+              { label: 'Boutiquier',    align: 'text-left' },
+              { label: 'Téléphone',     align: 'text-left' },
+              { label: 'Score',         align: 'text-right' },
+              { label: 'Catégorie',     align: 'text-left' },
+              { label: 'Limite',        align: 'text-right' },
+              { label: 'Encours',       align: 'text-right' },
+              { label: 'Crédits',       align: 'text-center' },
+              { label: '',              align: 'text-center' },
+            ].map(({ label, align }) => (
+              <th
+                key={label}
+                className={`px-4 py-3 text-xs font-semibold uppercase tracking-wider text-zinc-400 ${align}`}
+              >
+                {label}
+              </th>
+            ))}
           </tr>
         </thead>
         <tbody className="divide-y divide-violet-50">
@@ -60,14 +61,12 @@ export default function ScoreTable({ boutiquiers }: { boutiquiers: BankBoutiquie
                 <td className="px-4 py-3.5">
                   <CategoryBadge category={b.category} />
                 </td>
-                <td className="px-4 py-3.5 text-right text-xs text-zinc-500 tabular-nums">
+                <td className="px-4 py-3.5 text-right text-xs tabular-nums text-zinc-500">
                   {formatAmount(b.credit_limit)}
                 </td>
                 <td className="px-4 py-3.5 text-right tabular-nums">
                   {parseFloat(b.active_encours) > 0 ? (
-                    <span className="font-semibold text-violet-700">
-                      {formatAmount(b.active_encours)}
-                    </span>
+                    <span className="font-semibold text-violet-700">{formatAmount(b.active_encours)}</span>
                   ) : (
                     <span className="text-zinc-300">—</span>
                   )}
@@ -86,8 +85,7 @@ export default function ScoreTable({ boutiquiers }: { boutiquiers: BankBoutiquie
                     href={`/boutiquier/${b.id}`}
                     className="inline-flex items-center gap-1 rounded-lg bg-violet-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm shadow-violet-200 transition-all hover:bg-violet-700"
                   >
-                    Voir
-                    <IconArrowRight size={13} />
+                    Voir <IconArrowRight size={12} />
                   </Link>
                 </td>
               </tr>

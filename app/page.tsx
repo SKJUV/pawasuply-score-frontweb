@@ -1,30 +1,30 @@
 import Link from 'next/link';
 import { IconBank, IconStore, IconBolt, IconArrowRight, IconSearch } from '@/components/icons';
 
-const cards = [
+const modules = [
   {
     href: '/bank',
     Icon: IconBank,
     title: 'Dashboard Banque',
-    description: 'KPIs globaux, répartition des catégories, évolution NPL et tableau des boutiquiers.',
-    accentBorder: 'hover:border-violet-300',
-    iconStyle: 'bg-violet-50 text-violet-600',
+    description: 'KPIs globaux, répartition catégories, évolution NPL, tableau complet des boutiquiers.',
+    border: 'hover:border-violet-300',
+    iconCls: 'bg-violet-50 text-violet-600',
   },
   {
     href: '/grossiste',
     Icon: IconStore,
     title: 'Dashboard Grossiste',
-    description: 'Commandes livrées, commandes en attente, mises à jour automatiques Socket.io.',
-    accentBorder: 'hover:border-emerald-300',
-    iconStyle: 'bg-emerald-50 text-emerald-600',
+    description: 'Commandes livrées, commandes en attente, mises à jour Socket.io en temps réel.',
+    border: 'hover:border-emerald-300',
+    iconCls: 'bg-emerald-50 text-emerald-600',
   },
   {
     href: '/simulator',
     Icon: IconBolt,
-    title: 'Simulateur',
-    description: 'Testez dépôts Mobile Money, payouts grossiste et remboursements en sandbox.',
-    accentBorder: 'hover:border-amber-300',
-    iconStyle: 'bg-amber-50 text-amber-600',
+    title: 'Simulateur Sandbox',
+    description: 'Testez dépôts Mobile Money, payouts grossiste et remboursements — sandbox pawaPay.',
+    border: 'hover:border-amber-300',
+    iconCls: 'bg-amber-50 text-amber-600',
   },
 ];
 
@@ -37,33 +37,35 @@ const categories = [
 
 export default function HomePage() {
   return (
-    <div className="space-y-10">
+    <div className="space-y-8">
 
-      {/* Hero */}
-      <div className="relative overflow-hidden rounded-2xl gradient-bg px-8 py-12 text-white shadow-lg shadow-violet-300/30">
-        <div className="pointer-events-none absolute -right-12 -top-12 h-56 w-56 rounded-full bg-white/10" />
-        <div className="pointer-events-none absolute -bottom-8 left-0 h-40 w-40 rounded-full bg-white/5" />
-        <div className="relative z-10 flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
-          <div>
+      {/* ── Hero ──────────────────────────────────────────────────────── */}
+      <div className="relative overflow-hidden rounded-2xl gradient-bg px-6 py-10 text-white shadow-lg shadow-violet-300/30 sm:px-10 sm:py-14">
+        <div className="pointer-events-none absolute -right-10 -top-10 h-48 w-48 rounded-full bg-white/10 sm:h-64 sm:w-64" />
+        <div className="pointer-events-none absolute -bottom-8 left-0 h-32 w-32 rounded-full bg-white/5" />
+
+        <div className="relative z-10 flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+          <div className="max-w-lg">
             <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-violet-200">
-              Plateforme de scoring
+              Plateforme de scoring crédit
             </p>
-            <h1 className="text-3xl font-extrabold tracking-tight">
+            <h1 className="text-3xl font-extrabold tracking-tight sm:text-4xl">
               PawaSupply Score
             </h1>
-            <p className="mt-2 max-w-md text-sm leading-relaxed text-violet-100/90">
+            <p className="mt-3 text-sm leading-relaxed text-violet-100/90 sm:text-base">
               Gestion du crédit stock Mobile Money pour les boutiquiers
               camerounais — MTN MoMo &amp; Orange Money.
             </p>
           </div>
-          <div className="flex gap-3">
+
+          <div className="flex flex-wrap gap-3">
             {[
               { label: 'Catégories', value: '4' },
               { label: 'Opérateurs', value: '2' },
               { label: 'Score max',  value: '100' },
             ].map(({ label, value }) => (
-              <div key={label} className="rounded-xl bg-white/10 px-4 py-3 text-center backdrop-blur-sm">
-                <p className="text-xl font-bold">{value}</p>
+              <div key={label} className="rounded-xl bg-white/10 px-5 py-4 text-center backdrop-blur-sm">
+                <p className="text-2xl font-bold">{value}</p>
                 <p className="text-xs text-violet-200">{label}</p>
               </div>
             ))}
@@ -71,28 +73,26 @@ export default function HomePage() {
         </div>
       </div>
 
-      {/* Module cards */}
+      {/* ── Module cards ───────────────────────────────────────────────── */}
       <div>
-        <p className="mb-3 text-xs font-semibold uppercase tracking-widest text-zinc-400">
-          Modules
-        </p>
-        <div className="grid gap-4 sm:grid-cols-3">
-          {cards.map(({ href, Icon, title, description, accentBorder, iconStyle }) => (
+        <p className="mb-3 text-xs font-semibold uppercase tracking-widest text-zinc-400">Modules</p>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {modules.map(({ href, Icon, title, description, border, iconCls }) => (
             <Link
               key={href}
               href={href}
-              className={`card group flex flex-col gap-4 border-2 p-5 transition-all duration-200 hover:shadow-md hover:shadow-violet-100/80 ${accentBorder}`}
+              className={`card group flex flex-col gap-4 border-2 p-5 transition-all duration-200 hover:shadow-lg hover:shadow-violet-100/80 ${border}`}
             >
-              <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${iconStyle}`}>
+              <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${iconCls}`}>
                 <Icon size={18} />
               </div>
               <div className="flex-1">
-                <p className="font-bold text-violet-900 group-hover:text-violet-700 transition-colors">
+                <p className="font-bold text-violet-900 transition-colors group-hover:text-violet-700">
                   {title}
                 </p>
-                <p className="mt-1 text-sm leading-relaxed text-zinc-500">{description}</p>
+                <p className="mt-1.5 text-sm leading-relaxed text-zinc-500">{description}</p>
               </div>
-              <div className="flex items-center gap-1 text-xs font-semibold text-violet-400 group-hover:text-violet-600 transition-colors">
+              <div className="flex items-center gap-1 text-xs font-semibold text-violet-400 transition-all group-hover:gap-2 group-hover:text-violet-600">
                 Ouvrir <IconArrowRight size={13} />
               </div>
             </Link>
@@ -100,10 +100,10 @@ export default function HomePage() {
         </div>
       </div>
 
-      {/* Search + categories */}
+      {/* ── Search + Categories ─────────────────────────────────────────── */}
       <div className="grid gap-4 md:grid-cols-2">
 
-        {/* Search */}
+        {/* Quick search */}
         <div className="card p-5">
           <p className="mb-1 text-sm font-bold text-violet-900">Recherche rapide</p>
           <p className="mb-4 text-xs text-zinc-400">Accédez directement au profil d'un boutiquier</p>
@@ -113,7 +113,7 @@ export default function HomePage() {
               <input
                 name="id"
                 type="text"
-                placeholder="UUID ou numéro de téléphone"
+                placeholder="UUID ou 237XXXXXXXXX"
                 className="w-full rounded-xl border border-violet-200 bg-violet-50/40 py-2.5 pl-9 pr-3 text-sm placeholder-zinc-400 outline-none transition focus:border-violet-400 focus:bg-white focus:ring-2 focus:ring-violet-100"
               />
             </div>
@@ -129,13 +129,10 @@ export default function HomePage() {
         {/* Categories */}
         <div className="card p-5">
           <p className="mb-1 text-sm font-bold text-violet-900">Grille des catégories</p>
-          <p className="mb-4 text-xs text-zinc-400">Seuils de score et limites de crédit</p>
+          <p className="mb-4 text-xs text-zinc-400">Seuils de score et limites de crédit associées</p>
           <div className="space-y-1.5">
             {categories.map(({ name, range, limit, dot }) => (
-              <div
-                key={name}
-                className="flex items-center gap-3 rounded-lg px-3 py-2 hover:bg-violet-50 transition-colors"
-              >
+              <div key={name} className="flex items-center gap-3 rounded-lg px-3 py-2 hover:bg-violet-50/60 transition-colors">
                 <span className={`h-2 w-2 shrink-0 rounded-full ${dot}`} />
                 <span className="w-24 text-sm font-medium text-zinc-700">{name}</span>
                 <span className="w-14 text-center text-xs tabular-nums text-zinc-400">{range}</span>

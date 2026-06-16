@@ -14,17 +14,33 @@ const PROVIDER_LABEL: Record<string, string> = {
   MTN_MOMO_CMR: 'MTN MoMo',
   ORANGE_CMR:   'Orange Money',
 };
-
 const PROVIDER_STYLE: Record<string, string> = {
   MTN_MOMO_CMR: 'bg-yellow-50 text-yellow-700 ring-1 ring-yellow-200',
   ORANGE_CMR:   'bg-orange-50 text-orange-700 ring-1 ring-orange-200',
 };
 
-function EmptyRow({ label }: { label: string }) {
+function EmptyState({ label }: { label: string }) {
   return (
-    <div className="flex flex-col items-center justify-center gap-2 py-12 text-zinc-300">
+    <div className="flex flex-col items-center justify-center gap-2 py-10 text-zinc-300">
       <p className="text-sm">{label}</p>
     </div>
+  );
+}
+
+function TableHeader({ cols }: { cols: { label: string; right?: boolean }[] }) {
+  return (
+    <thead>
+      <tr className="border-b border-violet-50">
+        {cols.map(({ label, right }) => (
+          <th
+            key={label}
+            className={`px-4 py-3 text-xs font-semibold uppercase tracking-wider text-zinc-400 ${right ? 'text-right' : 'text-left'}`}
+          >
+            {label}
+          </th>
+        ))}
+      </tr>
+    </thead>
   );
 }
 
@@ -88,14 +104,13 @@ export default function GrossistePage() {
   if (initLoading) {
     return (
       <div className="flex h-72 flex-col items-center justify-center gap-4 text-zinc-400">
-        <Spinner size="lg" />
-        <p className="text-sm">Chargement…</p>
+        <Spinner size="lg" /><p className="text-sm">Chargement…</p>
       </div>
     );
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6 sm:space-y-8">
 
       <SectionHeader
         title="Dashboard Grossiste"
@@ -103,31 +118,28 @@ export default function GrossistePage() {
         right={
           <div className="flex items-center gap-1.5 rounded-full border border-violet-100 bg-violet-50 px-3 py-1.5 text-xs font-medium text-violet-600">
             <IconLive className="live-dot text-violet-500" size={7} />
-            Mises à jour en direct
+            En direct
           </div>
         }
       />
 
       {error && <ErrorAlert message={error} onRetry={() => loadOrders(selected, days)} />}
 
-      {/* Toast */}
       {toast && (
         <div className="flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3">
-          <IconCheck className="text-emerald-500" size={16} />
+          <IconCheck className="shrink-0 text-emerald-500" size={16} />
           <p className="text-sm font-medium text-emerald-700">{toast}</p>
         </div>
       )}
 
       {/* Controls */}
-      <div className="card flex flex-wrap items-end gap-5 p-5">
+      <div className="card flex flex-wrap items-end gap-4 p-5">
         <div className="flex flex-col gap-1.5">
-          <label className="text-xs font-semibold uppercase tracking-wider text-zinc-400">
-            Grossiste
-          </label>
+          <label className="text-xs font-semibold uppercase tracking-wider text-zinc-400">Grossiste</label>
           <select
             value={selected}
             onChange={(e) => setSelected(e.target.value)}
-            className="rounded-xl border border-violet-200 bg-violet-50/40 px-3.5 py-2.5 text-sm font-medium text-violet-900 outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
+            className="rounded-xl border border-violet-200 bg-violet-50/40 px-3 py-2.5 text-sm font-medium text-violet-900 outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
           >
             {grossistes.map((g) => (
               <option key={g.id} value={g.id}>
@@ -138,13 +150,11 @@ export default function GrossistePage() {
         </div>
 
         <div className="flex flex-col gap-1.5">
-          <label className="text-xs font-semibold uppercase tracking-wider text-zinc-400">
-            Période
-          </label>
+          <label className="text-xs font-semibold uppercase tracking-wider text-zinc-400">Période</label>
           <select
             value={days}
             onChange={(e) => setDays(parseInt(e.target.value))}
-            className="rounded-xl border border-violet-200 bg-violet-50/40 px-3.5 py-2.5 text-sm font-medium text-violet-900 outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
+            className="rounded-xl border border-violet-200 bg-violet-50/40 px-3 py-2.5 text-sm font-medium text-violet-900 outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
           >
             {[1, 7, 14, 30, 90].map((d) => (
               <option key={d} value={d}>{d === 1 ? "Aujourd'hui" : `${d} derniers jours`}</option>
@@ -154,7 +164,7 @@ export default function GrossistePage() {
 
         {selectedGrossiste && (
           <div className="ml-auto flex items-center gap-3">
-            <span className={`rounded-full px-3 py-1 text-xs font-semibold ${PROVIDER_STYLE[selectedGrossiste.mmo_provider] ?? 'bg-zinc-100 text-zinc-500'}`}>
+            <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${PROVIDER_STYLE[selectedGrossiste.mmo_provider] ?? 'bg-zinc-100 text-zinc-500'}`}>
               {PROVIDER_LABEL[selectedGrossiste.mmo_provider] ?? selectedGrossiste.mmo_provider}
             </span>
             <div className="text-right">
@@ -165,27 +175,27 @@ export default function GrossistePage() {
         )}
       </div>
 
-      {/* Summary */}
+      {/* KPIs */}
       {!loading && (
-        <div className="grid gap-4 sm:grid-cols-2">
-          <div className="card flex items-center gap-4 p-5">
-            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-amber-50 text-amber-500">
-              <IconClock size={20} />
+        <div className="grid grid-cols-2 gap-3 sm:gap-4">
+          <div className="card flex items-center gap-3 p-4 sm:gap-4 sm:p-5">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-50 text-amber-500 sm:h-11 sm:w-11">
+              <IconClock size={19} />
             </div>
             <div>
               <p className="text-xs font-semibold uppercase tracking-wider text-zinc-400">En attente</p>
-              <p className="text-2xl font-bold text-amber-600 tabular-nums">{pending.length}</p>
+              <p className="text-xl font-bold tabular-nums text-amber-600 sm:text-2xl">{pending.length}</p>
               <p className="text-xs text-zinc-400">PENDING_DELIVERY</p>
             </div>
           </div>
-          <div className="card flex items-center gap-4 p-5">
-            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-50 text-emerald-500">
-              <IconCheck size={20} />
+          <div className="card flex items-center gap-3 p-4 sm:gap-4 sm:p-5">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 text-emerald-500 sm:h-11 sm:w-11">
+              <IconCheck size={19} />
             </div>
             <div>
               <p className="text-xs font-semibold uppercase tracking-wider text-zinc-400">Livrées</p>
-              <p className="text-2xl font-bold text-emerald-600 tabular-nums">{orders.length}</p>
-              <p className="text-xs text-zinc-400">COMPLETED sur la période</p>
+              <p className="text-xl font-bold tabular-nums text-emerald-600 sm:text-2xl">{orders.length}</p>
+              <p className="text-xs text-zinc-400">COMPLETED</p>
             </div>
           </div>
         </div>
@@ -193,55 +203,46 @@ export default function GrossistePage() {
 
       {loading ? (
         <div className="flex h-40 items-center justify-center gap-3 text-zinc-400">
-          <Spinner />
-          <span className="text-sm">Chargement des commandes…</span>
+          <Spinner /><span className="text-sm">Chargement…</span>
         </div>
       ) : (
         <>
-          {/* Pending table */}
+          {/* Pending */}
           <div className="card overflow-hidden">
-            <div className="flex items-center justify-between border-b border-violet-50 px-5 py-4">
+            <div className="flex items-center justify-between border-b border-violet-50 px-4 py-4 sm:px-5">
               <div>
                 <p className="text-sm font-bold text-violet-900">En attente de livraison</p>
-                <p className="text-xs text-zinc-400">Payouts acceptés, confirmation opérateur en cours</p>
+                <p className="text-xs text-zinc-400">Payouts acceptés, confirmation en cours</p>
               </div>
               {pending.length > 0 && (
-                <span className="rounded-full bg-amber-100 px-2.5 py-1 text-xs font-bold text-amber-700">
-                  {pending.length}
-                </span>
+                <span className="rounded-full bg-amber-100 px-2.5 py-1 text-xs font-bold text-amber-700">{pending.length}</span>
               )}
             </div>
-            {pending.length === 0 ? (
-              <EmptyRow label="Aucune commande en attente" />
-            ) : (
+            {pending.length === 0 ? <EmptyState label="Aucune commande en attente" /> : (
               <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-violet-50">
-                      {['Boutiquier', 'Téléphone', 'Opérateur', 'Montant', 'Statut', 'Date'].map((h) => (
-                        <th key={h} className={`px-4 py-3 text-xs font-semibold uppercase tracking-wider text-zinc-400 ${h === 'Montant' ? 'text-right' : 'text-left'}`}>{h}</th>
-                      ))}
-                    </tr>
-                  </thead>
+                <table className="w-full min-w-[560px] text-sm">
+                  <TableHeader cols={[
+                    { label: 'Boutiquier' }, { label: 'Téléphone' },
+                    { label: 'Opérateur' }, { label: 'Montant', right: true },
+                    { label: 'Statut' }, { label: 'Date' },
+                  ]} />
                   <tbody className="divide-y divide-violet-50">
                     {pending.map((p) => (
                       <tr key={p.credit_id} className="table-row-hover">
-                        <td className="px-4 py-3.5 font-semibold text-violet-900">{p.boutiquier_name}</td>
-                        <td className="px-4 py-3.5 font-mono text-xs text-zinc-400">{p.phone_number}</td>
-                        <td className="px-4 py-3.5">
-                          <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${PROVIDER_STYLE[p.provider] ?? 'bg-zinc-100 text-zinc-500'}`}>
+                        <td className="px-4 py-3 font-semibold text-violet-900">{p.boutiquier_name}</td>
+                        <td className="px-4 py-3 font-mono text-xs text-zinc-400">{p.phone_number}</td>
+                        <td className="px-4 py-3">
+                          <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${PROVIDER_STYLE[p.provider] ?? 'bg-zinc-100 text-zinc-500'}`}>
                             {PROVIDER_LABEL[p.provider] ?? p.provider}
                           </span>
                         </td>
-                        <td className="px-4 py-3.5 text-right font-bold tabular-nums text-amber-700">
-                          {formatAmount(p.amount)}
-                        </td>
-                        <td className="px-4 py-3.5">
-                          <span className="rounded-full bg-amber-100 px-2.5 py-1 text-xs font-semibold text-amber-700 ring-1 ring-amber-200">
+                        <td className="px-4 py-3 text-right font-bold tabular-nums text-amber-700">{formatAmount(p.amount)}</td>
+                        <td className="px-4 py-3">
+                          <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-700 ring-1 ring-amber-200">
                             {p.credit_status}
                           </span>
                         </td>
-                        <td className="px-4 py-3.5 text-xs text-zinc-400">{formatDateTime(p.created_at)}</td>
+                        <td className="px-4 py-3 text-xs text-zinc-400">{formatDateTime(p.created_at)}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -250,45 +251,35 @@ export default function GrossistePage() {
             )}
           </div>
 
-          {/* Completed table */}
+          {/* Completed */}
           <div className="card overflow-hidden">
-            <div className="flex items-center justify-between border-b border-violet-50 px-5 py-4">
+            <div className="flex items-center justify-between border-b border-violet-50 px-4 py-4 sm:px-5">
               <div>
                 <p className="text-sm font-bold text-violet-900">Commandes livrées</p>
-                <p className="text-xs text-zinc-400">Payouts COMPLETED sur la période sélectionnée</p>
+                <p className="text-xs text-zinc-400">Payouts COMPLETED sur la période</p>
               </div>
               {orders.length > 0 && (
-                <span className="rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-bold text-emerald-700">
-                  {orders.length}
-                </span>
+                <span className="rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-bold text-emerald-700">{orders.length}</span>
               )}
             </div>
-            {orders.length === 0 ? (
-              <EmptyRow label="Aucune commande sur cette période" />
-            ) : (
+            {orders.length === 0 ? <EmptyState label="Aucune commande sur cette période" /> : (
               <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-violet-50">
-                      {['Boutiquier', 'Téléphone', 'Opérateur', 'Montant', 'Date'].map((h) => (
-                        <th key={h} className={`px-4 py-3 text-xs font-semibold uppercase tracking-wider text-zinc-400 ${h === 'Montant' ? 'text-right' : 'text-left'}`}>{h}</th>
-                      ))}
-                    </tr>
-                  </thead>
+                <table className="w-full min-w-[480px] text-sm">
+                  <TableHeader cols={[
+                    { label: 'Boutiquier' }, { label: 'Opérateur' },
+                    { label: 'Montant', right: true }, { label: 'Date' },
+                  ]} />
                   <tbody className="divide-y divide-violet-50">
                     {orders.map((o) => (
                       <tr key={o.id} className="table-row-hover">
-                        <td className="px-4 py-3.5 font-semibold text-violet-900">{o.boutiquier_name}</td>
-                        <td className="px-4 py-3.5 font-mono text-xs text-zinc-400">{o.boutiquier_phone}</td>
-                        <td className="px-4 py-3.5">
-                          <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${PROVIDER_STYLE[o.provider] ?? 'bg-zinc-100 text-zinc-500'}`}>
+                        <td className="px-4 py-3 font-semibold text-violet-900">{o.boutiquier_name}</td>
+                        <td className="px-4 py-3">
+                          <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${PROVIDER_STYLE[o.provider] ?? 'bg-zinc-100 text-zinc-500'}`}>
                             {PROVIDER_LABEL[o.provider] ?? o.provider}
                           </span>
                         </td>
-                        <td className="px-4 py-3.5 text-right font-bold tabular-nums text-emerald-700">
-                          {formatAmount(o.amount)}
-                        </td>
-                        <td className="px-4 py-3.5 text-xs text-zinc-400">{formatDateTime(o.created_at)}</td>
+                        <td className="px-4 py-3 text-right font-bold tabular-nums text-emerald-700">{formatAmount(o.amount)}</td>
+                        <td className="px-4 py-3 text-xs text-zinc-400">{formatDateTime(o.created_at)}</td>
                       </tr>
                     ))}
                   </tbody>
