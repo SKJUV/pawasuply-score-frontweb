@@ -1,8 +1,20 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #fafafa;
+  --foreground: #0f0a1e;
+
+  /* Violet palette */
+  --violet-50:  #f5f3ff;
+  --violet-100: #ede9fe;
+  --violet-200: #ddd6fe;
+  --violet-300: #c4b5fd;
+  --violet-400: #a78bfa;
+  --violet-500: #8b5cf6;
+  --violet-600: #7c3aed;
+  --violet-700: #6d28d9;
+  --violet-800: #5b21b6;
+  --violet-900: #4c1d95;
 }
 
 @theme inline {
@@ -12,15 +24,61 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+}
+
+/* Scrollbar fine */
+::-webkit-scrollbar        { width: 6px; height: 6px; }
+::-webkit-scrollbar-track  { background: transparent; }
+::-webkit-scrollbar-thumb  { background: #c4b5fd; border-radius: 99px; }
+::-webkit-scrollbar-thumb:hover { background: #8b5cf6; }
+
+/* Smooth focus ring */
+*:focus-visible {
+  outline: 2px solid #8b5cf6;
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+/* Card base */
+.card {
+  background: #ffffff;
+  border: 1px solid #ede9fe;
+  border-radius: 16px;
+  box-shadow: 0 1px 4px 0 rgba(109, 40, 217, 0.06);
+}
+
+/* Gradient hero */
+.gradient-bg {
+  background: linear-gradient(135deg, #7c3aed 0%, #a78bfa 50%, #c4b5fd 100%);
+}
+
+/* Sidebar gradient */
+.sidebar-gradient {
+  background: linear-gradient(180deg, #5b21b6 0%, #7c3aed 60%, #8b5cf6 100%);
+}
+
+/* Table row hover */
+.table-row-hover:hover {
+  background: #f5f3ff;
+}
+
+/* Animated badge pulse */
+@keyframes live-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: 0.6; transform: scale(1.3); }
+}
+.live-dot {
+  animation: live-pulse 2s ease-in-out infinite;
+}
+
+/* Subtle page fade-in */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.page-enter {
+  animation: fadeIn 0.3s ease-out both;
 }
