@@ -192,25 +192,13 @@ export default function BoutiquierProfilePage() {
                 </span>
               </p>
             </div>
-            <div className="flex items-center gap-2">
-              <span
-                className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
-                  CREDIT_STATUS_STYLE[boutiquier.activeCredit.status] ?? 'bg-zinc-100 text-zinc-500'
-                }`}
-              >
-                {boutiquier.activeCredit.status}
-              </span>
-              {/* Bouton remboursement — uniquement si crédit ACTIVE */}
-              {boutiquier.activeCredit.status === 'ACTIVE' && (
-                <button
-                  onClick={() => goToRepayment(boutiquier.activeCredit!.id)}
-                  className="flex items-center gap-1.5 rounded-xl bg-violet-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm shadow-violet-200 hover:bg-violet-700 transition-colors"
-                >
-                  <IconRefresh size={13} />
-                  Rembourser
-                </button>
-              )}
-            </div>
+            <span
+              className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
+                CREDIT_STATUS_STYLE[boutiquier.activeCredit.status] ?? 'bg-zinc-100 text-zinc-500'
+              }`}
+            >
+              {boutiquier.activeCredit.status}
+            </span>
           </div>
 
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">

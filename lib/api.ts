@@ -60,9 +60,15 @@ export async function apiFetch<T = unknown>(
   } catch { /* not JSON */ }
 
   try {
+    // Merge headers proprement
+    const { headers: optHeaders, ...restOptions } = options;
     const res = await fetch(`${BASE}${path}`, {
-      headers: { 'Content-Type': 'application/json' },
-      ...options,
+      ...restOptions,
+      headers: {
+        'Content-Type': 'application/json',
+        'ngrok-skip-browser-warning': 'true',
+        ...(optHeaders as Record<string, string> ?? {}),
+      },
     });
 
     const durationMs = Date.now() - t0;
