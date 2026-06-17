@@ -77,23 +77,6 @@ export async function apiFetch<T = unknown>(
     };
     pushLog(entry);
 
-    // Forward client-side log to backend for permanent storage (best-effort).
-    // The backend must expose an endpoint to accept these entries (e.g. POST /client-logs).
-    try {
-      const devKey = process.env.NEXT_PUBLIC_DEV_KEY ?? '';
-      const url = `${BASE}/client-logs${devKey ? `?key=${encodeURIComponent(devKey)}` : ''}`;
-      const body = JSON.stringify(entry);
-      if (typeof navigator !== 'undefined' && typeof (navigator as Navigator & { sendBeacon?: (url: string, data: Blob) => boolean }).sendBeacon === 'function') {
-        try {
-          const blob = new Blob([body], { type: 'application/json' });
-          (navigator as Navigator & { sendBeacon: (url: string, data: Blob) => boolean }).sendBeacon(url, blob);
-        } catch { /* ignore */ }
-      } else {
-        // keepalive for unload scenarios; don't await to avoid blocking
-        fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body, keepalive: true }).catch(() => {});
-      }
-    } catch { /* ignore */ }
-
     if (!res.ok) {
       const err = (responseBody as { error?: string }) ?? {};
       throw new ApiError(err.error ?? res.statusText, res.status, responseBody);

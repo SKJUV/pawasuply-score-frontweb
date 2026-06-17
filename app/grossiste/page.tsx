@@ -14,6 +14,7 @@ const PROVIDER_LABEL: Record<string, string> = {
   MTN_MOMO_CMR: 'MTN MoMo',
   ORANGE_CMR:   'Orange Money',
 };
+
 const PROVIDER_STYLE: Record<string, string> = {
   MTN_MOMO_CMR: 'bg-yellow-50 text-yellow-700 ring-1 ring-yellow-200',
   ORANGE_CMR:   'bg-orange-50 text-orange-700 ring-1 ring-orange-200',
@@ -27,20 +28,11 @@ function EmptyState({ label }: { label: string }) {
   );
 }
 
-function TableHeader({ cols }: { cols: { label: string; right?: boolean }[] }) {
+function Th({ label, right }: { label: string; right?: boolean }) {
   return (
-    <thead>
-      <tr className="border-b border-violet-50">
-        {cols.map(({ label, right }) => (
-          <th
-            key={label}
-            className={`px-4 py-3 text-xs font-semibold uppercase tracking-wider text-zinc-400 ${right ? 'text-right' : 'text-left'}`}
-          >
-            {label}
-          </th>
-        ))}
-      </tr>
-    </thead>
+    <th className={`px-4 py-3 text-xs font-semibold uppercase tracking-wider text-zinc-400 ${right ? 'text-right' : 'text-left'}`}>
+      {label}
+    </th>
   );
 }
 
@@ -54,21 +46,13 @@ export default function GrossistePage() {
   const [initLoading, setInitLoading] = useState(true);
   const [error,       setError]       = useState<string | null>(null);
   const [toast,       setToast]       = useState<string | null>(null);
-  const [isDevMode, setIsDevMode] = useState(false);
 
+  // Charger la liste des grossistes une seule fois
   useEffect(() => {
     apiFetch<Grossiste[]>('/grossistes')
       .then((g) => { setGrossistes(g); if (g.length > 0) setSelected(g[0].id); })
       .catch((e) => setError((e as Error).message))
       .finally(() => setInitLoading(false));
-  }, []);
-
-  // detect dev session for showing debug controls (must run regardless of early returns)
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    Promise.resolve().then(() => {
-      setIsDevMode(sessionStorage.getItem('ps_dev') === (process.env.NEXT_PUBLIC_DEV_KEY ?? ''));
-    });
   }, []);
 
   const loadOrders = useCallback(async (id: string, d: number) => {
@@ -90,16 +74,14 @@ export default function GrossistePage() {
   }, []);
 
   useEffect(() => {
-    if (selected) {
-      Promise.resolve().then(() => {
-        loadOrders(selected, days);
-      });
-    }
+    if (selected) loadOrders(selected, days);
   }, [selected, days, loadOrders]);
 
+  // Socket.io — payout livré en temps réel
   useEffect(() => {
     if (!selected) return;
     const socket = getSocket();
+
     const handle = async ({ boutiquierId }: PayoutCompletedEvent) => {
       const [o, p] = await Promise.all([
         apiFetch<GrossisteOrder[]>(`/grossistes/${selected}/orders?days=${days}`).catch(() => null),
@@ -110,75 +92,23 @@ export default function GrossistePage() {
       setToast(`Livraison confirmée — boutiquier ${boutiquierId.slice(0, 8)}…`);
       setTimeout(() => setToast(null), 5000);
     };
+
     socket.on('payout:completed', handle);
     return () => { socket.off('payout:completed', handle); };
   }, [selected, days]);
+
+  // Calcul du total XAF des commandes livrées
+  const totalLivre = orders.reduce((sum, o) => sum + parseFloat(o.amount), 0);
 
   const selectedGrossiste = grossistes.find((g) => g.id === selected);
 
   if (initLoading) {
     return (
       <div className="flex h-72 flex-col items-center justify-center gap-4 text-zinc-400">
-        <Spinner size="lg" /><p className="text-sm">Chargement…</p>
+        <Spinner size="lg" />
+        <p className="text-sm">Chargement…</p>
       </div>
     );
-  }
-
-
-  async function markDelivered(pendingOrder: PendingOrder) {
-    if (!pendingOrder?.credit_id) return;
-    try {
-      setLoading(true);
-      const devKey = typeof window !== 'undefined' ? sessionStorage.getItem('ps_dev') ?? '' : '';
-      // Prefer calling a backend admin endpoint if available, otherwise call local dev route.
-      const endpoint = isDevMode ? `/api/dev/complete-payout?key=${encodeURIComponent(devKey)}` : `/payouts/${pendingOrder.credit_id}/complete`;
-      await apiFetch(endpoint, {
-        method: 'POST',
-        body: JSON.stringify({
-          creditId: pendingOrder.credit_id,
-          payoutId: pendingOrder.payout_id,
-          boutiquierName: pendingOrder.boutiquier_name,
-          boutiquierId: pendingOrder.boutiquier_id ?? undefined,
-          amount: pendingOrder.amount,
-          provider: pendingOrder.provider,
-        }),
-      });
-
-      // Update UI locally so the change is visible even if backend doesn't persist.
-      setPending((prev) => prev.filter((p) => p.credit_id !== pendingOrder.credit_id));
-      const now = new Date().toISOString();
-      const newOrder = {
-        id: pendingOrder.payout_id || pendingOrder.credit_id,
-        amount: String(pendingOrder.amount),
-        currency: 'XAF',
-        provider: pendingOrder.provider,
-        status: 'COMPLETED',
-        created_at: now,
-        updated_at: now,
-        boutiquier_name: pendingOrder.boutiquier_name,
-        boutiquier_phone: pendingOrder.phone_number,
-      };
-      setOrders((prev) => [newOrder, ...(prev || [])]);
-
-      // Emit simulated payout event via Socket.io so other clients refresh
-      try {
-        const socket = getSocket();
-        socket.emit('payout:completed', { payoutId: newOrder.id, boutiquierId: pendingOrder.boutiquier_id ?? null });
-      } catch {}
-
-      // Also dispatch a window event for in-tab listeners
-      try {
-        window.dispatchEvent(new CustomEvent('dev:payout:completed', { detail: { payoutId: newOrder.id, boutiquierId: pendingOrder.boutiquier_id ?? null } }));
-      } catch {}
-
-      setToast('Marqué comme livré (simulé en local)');
-      setTimeout(() => setToast(null), 4000);
-    } catch (e) {
-      setToast(`Erreur complétion: ${(e as Error).message}`);
-      setTimeout(() => setToast(null), 4000);
-    } finally {
-      setLoading(false);
-    }
   }
 
   return (
@@ -197,6 +127,7 @@ export default function GrossistePage() {
 
       {error && <ErrorAlert message={error} onRetry={() => loadOrders(selected, days)} />}
 
+      {/* Toast livraison confirmée */}
       {toast && (
         <div className="flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3">
           <IconCheck className="shrink-0 text-emerald-500" size={16} />
@@ -204,10 +135,12 @@ export default function GrossistePage() {
         </div>
       )}
 
-      {/* Controls */}
+      {/* Sélecteurs */}
       <div className="card flex flex-wrap items-end gap-4 p-5">
         <div className="flex flex-col gap-1.5">
-          <label className="text-xs font-semibold uppercase tracking-wider text-zinc-400">Grossiste</label>
+          <label className="text-xs font-semibold uppercase tracking-wider text-zinc-400">
+            Grossiste
+          </label>
           <select
             value={selected}
             onChange={(e) => setSelected(e.target.value)}
@@ -222,14 +155,18 @@ export default function GrossistePage() {
         </div>
 
         <div className="flex flex-col gap-1.5">
-          <label className="text-xs font-semibold uppercase tracking-wider text-zinc-400">Période</label>
+          <label className="text-xs font-semibold uppercase tracking-wider text-zinc-400">
+            Période
+          </label>
           <select
             value={days}
             onChange={(e) => setDays(parseInt(e.target.value))}
             className="rounded-xl border border-violet-200 bg-violet-50/40 px-3 py-2.5 text-sm font-medium text-violet-900 outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
           >
             {[1, 7, 14, 30, 90].map((d) => (
-              <option key={d} value={d}>{d === 1 ? "Aujourd'hui" : `${d} derniers jours`}</option>
+              <option key={d} value={d}>
+                {d === 1 ? "Aujourd'hui" : `${d} derniers jours`}
+              </option>
             ))}
           </select>
         </div>
@@ -247,60 +184,78 @@ export default function GrossistePage() {
         )}
       </div>
 
-      {/* KPIs */}
-      {!loading && (
-        <div className="grid grid-cols-2 gap-3 sm:gap-4">
-          <div className="card flex items-center gap-3 p-4 sm:gap-4 sm:p-5">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-50 text-amber-500 sm:h-11 sm:w-11">
-              <IconClock size={19} />
-            </div>
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-wider text-zinc-400">En attente</p>
-              <p className="text-xl font-bold tabular-nums text-amber-600 sm:text-2xl">{pending.length}</p>
-              <p className="text-xs text-zinc-400">PENDING_DELIVERY</p>
-            </div>
+      {/* KPIs résumé — toujours affichés, même pendant le chargement */}
+      <div className="grid grid-cols-2 gap-3 sm:gap-4">
+        <div className="card flex items-center gap-3 p-4 sm:gap-4 sm:p-5">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-50 text-amber-500">
+            <IconClock size={19} />
           </div>
-          <div className="card flex items-center gap-3 p-4 sm:gap-4 sm:p-5">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 text-emerald-500 sm:h-11 sm:w-11">
-              <IconCheck size={19} />
-            </div>
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-wider text-zinc-400">Livrées</p>
-              <p className="text-xl font-bold tabular-nums text-emerald-600 sm:text-2xl">{orders.length}</p>
-              <p className="text-xs text-zinc-400">COMPLETED</p>
-            </div>
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wider text-zinc-400">En attente</p>
+            <p className="text-xl font-bold tabular-nums text-amber-600 sm:text-2xl">
+              {loading ? '—' : pending.length}
+            </p>
+            <p className="text-xs text-zinc-400">PENDING_DELIVERY</p>
           </div>
         </div>
-      )}
+
+        <div className="card flex items-center gap-3 p-4 sm:gap-4 sm:p-5">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-500">
+            <IconCheck size={19} />
+          </div>
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wider text-zinc-400">Livrées</p>
+            <p className="text-xl font-bold tabular-nums text-emerald-600 sm:text-2xl">
+              {loading ? '—' : orders.length}
+            </p>
+            {!loading && orders.length > 0 && (
+              <p className="text-xs font-medium text-emerald-700 tabular-nums">
+                {formatAmount(totalLivre)}
+              </p>
+            )}
+          </div>
+        </div>
+      </div>
 
       {loading ? (
         <div className="flex h-40 items-center justify-center gap-3 text-zinc-400">
-          <Spinner /><span className="text-sm">Chargement…</span>
+          <Spinner />
+          <span className="text-sm">Chargement des commandes…</span>
         </div>
       ) : (
         <>
-          {/* Pending */}
+          {/* Table — en attente */}
           <div className="card overflow-hidden">
             <div className="flex items-center justify-between border-b border-violet-50 px-4 py-4 sm:px-5">
               <div>
                 <p className="text-sm font-bold text-violet-900">En attente de livraison</p>
-                <p className="text-xs text-zinc-400">Payouts acceptés, confirmation en cours</p>
+                <p className="text-xs text-zinc-400">Payouts acceptés, confirmation opérateur en cours</p>
               </div>
               {pending.length > 0 && (
-                <span className="rounded-full bg-amber-100 px-2.5 py-1 text-xs font-bold text-amber-700">{pending.length}</span>
+                <span className="rounded-full bg-amber-100 px-2.5 py-1 text-xs font-bold text-amber-700">
+                  {pending.length}
+                </span>
               )}
             </div>
-            {pending.length === 0 ? <EmptyState label="Aucune commande en attente" /> : (
+
+            {pending.length === 0 ? (
+              <EmptyState label="Aucune commande en attente" />
+            ) : (
               <div className="overflow-x-auto">
                 <table className="w-full min-w-[560px] text-sm">
-                  <TableHeader cols={[
-                    { label: 'Boutiquier' }, { label: 'Téléphone' },
-                    { label: 'Opérateur' }, { label: 'Montant', right: true },
-                    { label: 'Statut' }, { label: 'Date' },
-                  ]} />
+                  <thead>
+                    <tr className="border-b border-violet-50">
+                      <Th label="Boutiquier" />
+                      <Th label="Téléphone" />
+                      <Th label="Opérateur" />
+                      <Th label="Montant" right />
+                      <Th label="Statut" />
+                      <Th label="Date" />
+                    </tr>
+                  </thead>
                   <tbody className="divide-y divide-violet-50">
                     {pending.map((p) => (
-                      <tr key={p.credit_id} className="table-row-hover">
+                      <tr key={p.credit_id} className="table-row-hover transition-colors">
                         <td className="px-4 py-3 font-semibold text-violet-900">{p.boutiquier_name}</td>
                         <td className="px-4 py-3 font-mono text-xs text-zinc-400">{p.phone_number}</td>
                         <td className="px-4 py-3">
@@ -308,23 +263,17 @@ export default function GrossistePage() {
                             {PROVIDER_LABEL[p.provider] ?? p.provider}
                           </span>
                         </td>
-                        <td className="px-4 py-3 text-right font-bold tabular-nums text-amber-700">{formatAmount(p.amount)}</td>
+                        <td className="px-4 py-3 text-right font-bold tabular-nums text-amber-700">
+                          {formatAmount(p.amount)}
+                        </td>
                         <td className="px-4 py-3">
                           <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-700 ring-1 ring-amber-200">
                             {p.credit_status}
                           </span>
                         </td>
-                        <td className="px-4 py-3 text-xs text-zinc-400">{formatDateTime(p.created_at)}</td>
-                          <td className="px-4 py-3 text-right">
-                            {isDevMode ? (
-                              <button
-                                onClick={() => markDelivered(p)}
-                                className="rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-700"
-                              >
-                                Marquer Livré
-                              </button>
-                            ) : null}
-                          </td>
+                        <td className="px-4 py-3 text-xs text-zinc-400">
+                          {formatDateTime(p.created_at)}
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -333,35 +282,57 @@ export default function GrossistePage() {
             )}
           </div>
 
-          {/* Completed */}
+          {/* Table — livrées */}
           <div className="card overflow-hidden">
             <div className="flex items-center justify-between border-b border-violet-50 px-4 py-4 sm:px-5">
               <div>
                 <p className="text-sm font-bold text-violet-900">Commandes livrées</p>
-                <p className="text-xs text-zinc-400">Payouts COMPLETED sur la période</p>
+                <p className="text-xs text-zinc-400">Payouts COMPLETED sur la période sélectionnée</p>
               </div>
-              {orders.length > 0 && (
-                <span className="rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-bold text-emerald-700">{orders.length}</span>
-              )}
+              <div className="flex items-center gap-2">
+                {orders.length > 0 && (
+                  <>
+                    <span className="hidden text-xs font-semibold tabular-nums text-emerald-700 sm:block">
+                      {formatAmount(totalLivre)}
+                    </span>
+                    <span className="rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-bold text-emerald-700">
+                      {orders.length}
+                    </span>
+                  </>
+                )}
+              </div>
             </div>
-            {orders.length === 0 ? <EmptyState label="Aucune commande sur cette période" /> : (
+
+            {orders.length === 0 ? (
+              <EmptyState label="Aucune commande sur cette période" />
+            ) : (
               <div className="overflow-x-auto">
                 <table className="w-full min-w-[480px] text-sm">
-                  <TableHeader cols={[
-                    { label: 'Boutiquier' }, { label: 'Opérateur' },
-                    { label: 'Montant', right: true }, { label: 'Date' },
-                  ]} />
+                  <thead>
+                    <tr className="border-b border-violet-50">
+                      <Th label="Boutiquier" />
+                      <Th label="Téléphone" />
+                      <Th label="Opérateur" />
+                      <Th label="Montant" right />
+                      <Th label="Date" />
+                    </tr>
+                  </thead>
                   <tbody className="divide-y divide-violet-50">
                     {orders.map((o) => (
-                      <tr key={o.id} className="table-row-hover">
+                      <tr key={o.id} className="table-row-hover transition-colors">
                         <td className="px-4 py-3 font-semibold text-violet-900">{o.boutiquier_name}</td>
+                        <td className="px-4 py-3 font-mono text-xs text-zinc-400">{o.boutiquier_phone}</td>
                         <td className="px-4 py-3">
                           <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${PROVIDER_STYLE[o.provider] ?? 'bg-zinc-100 text-zinc-500'}`}>
                             {PROVIDER_LABEL[o.provider] ?? o.provider}
                           </span>
                         </td>
-                        <td className="px-4 py-3 text-right font-bold tabular-nums text-emerald-700">{formatAmount(o.amount)}</td>
-                        <td className="px-4 py-3 text-xs text-zinc-400">{formatDateTime(o.created_at)}</td>
+                        <td className="px-4 py-3 text-right font-bold tabular-nums text-emerald-700">
+                          {formatAmount(o.amount)}
+                        </td>
+                        <td className="px-4 py-3 text-xs text-zinc-400">
+                          {formatDateTime(o.created_at)}
+                        </td>
                       </tr>
                     ))}
                   </tbody>

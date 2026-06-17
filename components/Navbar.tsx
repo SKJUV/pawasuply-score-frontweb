@@ -3,10 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import {
-  IconBank, IconStore, IconBolt, IconLive,
-  IconLogs, IconMenu, IconClose,
-} from './icons';
+import { IconBank, IconStore, IconBolt, IconLive, IconLogs, IconMenu, IconClose } from './icons';
 
 const links = [
   { href: '/bank',      label: 'Banque',     Icon: IconBank },
@@ -14,27 +11,26 @@ const links = [
   { href: '/simulator', label: 'Simulateur', Icon: IconBolt },
 ];
 
-// Le lien Logs n'est visible que si la clé dev est définie
-const DEV_KEY = process.env.NEXT_PUBLIC_DEV_KEY ?? 'dev';
-
 export default function Navbar() {
-  const pathname  = usePathname();
-  const [open, setOpen] = useState(false);
+  const pathname      = usePathname();
+  const [open, setOpen]         = useState(false);
   const [isDevMode, setIsDevMode] = useState(false);
 
+  // Détection côté client uniquement — sessionStorage n'existe pas côté SSR
   useEffect(() => {
-    if (typeof window === 'undefined') return;
-    Promise.resolve().then(() => {
-      setIsDevMode(sessionStorage.getItem('ps_dev') === DEV_KEY);
-    });
+    const key = process.env.NEXT_PUBLIC_DEV_KEY ?? 'dev';
+    setIsDevMode(sessionStorage.getItem('ps_dev') === key);
   }, []);
+
+  // Fermer le drawer sur changement de route
+  useEffect(() => { setOpen(false); }, [pathname]);
 
   return (
     <header className="sticky top-0 z-50 border-b border-violet-100 bg-white/95 backdrop-blur-md shadow-sm">
       <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3 sm:px-6">
 
         {/* Logo */}
-        <Link href="/" className="flex shrink-0 items-center gap-2" onClick={() => setOpen(false)}>
+        <Link href="/" className="flex shrink-0 items-center gap-2">
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-violet-600 shadow-sm shadow-violet-300">
             <span className="text-xs font-bold leading-none text-white">PS</span>
           </div>
@@ -43,7 +39,7 @@ export default function Navbar() {
           </span>
         </Link>
 
-        {/* Desktop nav */}
+        {/* Nav desktop */}
         <nav className="hidden items-center gap-1 md:flex">
           {links.map(({ href, label, Icon }) => {
             const active = pathname.startsWith(href);
@@ -62,6 +58,8 @@ export default function Navbar() {
               </Link>
             );
           })}
+
+          {/* Logs — visible uniquement si session dev active */}
           {isDevMode && (
             <Link
               href="/logs"
@@ -77,24 +75,25 @@ export default function Navbar() {
           )}
         </nav>
 
-        {/* Right: live badge + mobile burger */}
+        {/* Right */}
         <div className="flex items-center gap-2">
           <div className="hidden items-center gap-1.5 rounded-full border border-violet-100 bg-violet-50 px-3 py-1.5 text-xs font-medium text-violet-600 sm:flex">
             <IconLive className="live-dot text-violet-500" size={7} />
             Temps réel
           </div>
-          {/* Mobile burger */}
+
+          {/* Burger mobile */}
           <button
             onClick={() => setOpen((v) => !v)}
             className="flex h-8 w-8 items-center justify-center rounded-lg text-zinc-500 hover:bg-violet-50 hover:text-violet-700 md:hidden"
-            aria-label="Menu"
+            aria-label={open ? 'Fermer le menu' : 'Ouvrir le menu'}
           >
             {open ? <IconClose size={18} /> : <IconMenu size={18} />}
           </button>
         </div>
       </div>
 
-      {/* Mobile drawer */}
+      {/* Drawer mobile */}
       {open && (
         <div className="border-t border-violet-100 bg-white px-4 pb-4 md:hidden">
           <nav className="mt-3 flex flex-col gap-1">
@@ -104,7 +103,6 @@ export default function Navbar() {
                 <Link
                   key={href}
                   href={href}
-                  onClick={() => setOpen(false)}
                   className={`flex items-center gap-2.5 rounded-xl px-4 py-3 text-sm font-medium transition-colors ${
                     active
                       ? 'bg-violet-600 text-white'
@@ -119,7 +117,6 @@ export default function Navbar() {
             {isDevMode && (
               <Link
                 href="/logs"
-                onClick={() => setOpen(false)}
                 className={`flex items-center gap-2.5 rounded-xl px-4 py-3 text-sm font-medium transition-colors ${
                   pathname.startsWith('/logs')
                     ? 'bg-zinc-800 text-white'

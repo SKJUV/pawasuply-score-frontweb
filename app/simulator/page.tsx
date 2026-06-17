@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { apiFetch } from '@/lib/api';
 import type { DepositResponse, PayoutResponse, RepaymentResponse } from '@/lib/types';
 import Spinner from '@/components/Spinner';
@@ -60,11 +61,13 @@ function makeDeposit(phoneRaw: string, boutiquierId: string) {
   });
 }
 
-export default function SimulatorPage() {
+function SimulatorContent() {
+  const params = useSearchParams();
   const [loading,        setLoading]        = useState<string | null>(null);
   const [result,         setResult]         = useState<ResultState | null>(null);
   const [customAmount,   setCustomAmount]   = useState(10000);
-  const [customCreditId, setCustomCreditId] = useState('');
+  // Pré-rempli si on arrive depuis /boutiquier/[id]
+  const [customCreditId, setCustomCreditId] = useState(params.get('creditId') ?? '');
 
   const actions: ActionDef[] = [
     // ── Dépôts ─────────────────────────────────────────────────────────────
@@ -384,5 +387,20 @@ export default function SimulatorPage() {
       </div>
 
     </div>
+  );
+}
+
+// Wrapper Suspense requis par useSearchParams
+export default function SimulatorPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex h-72 items-center justify-center text-zinc-400">
+          <Spinner size="lg" />
+        </div>
+      }
+    >
+      <SimulatorContent />
+    </Suspense>
   );
 }
