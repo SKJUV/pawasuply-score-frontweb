@@ -74,11 +74,11 @@ export interface GrossisteOrder {
 
 export interface PendingOrder {
   credit_id: string;
+  boutiquier_id: string;
   amount: string;
   credit_status: CreditStatus;
   created_at: string;
   boutiquier_name: string;
-  boutiquier_id?: string;   // optionnel — présent selon version backend
   phone_number: string;
   provider: string;
   payout_id: string;

@@ -133,6 +133,21 @@ function SimulatorContent() {
         }),
       }),
     },
+    {
+      id: 'payout-wallet-limit',
+      label: 'Limite portefeuille',
+      category: 'Payouts Crédit Stock',
+      description: 'WALLET_LIMIT_REACHED → crédit annulé, aucune pénalité score (suffixe 099)',
+      variant: 'zinc', Icon: IconWarning,
+      run: async () => ({
+        type: 'payout',
+        data: await apiFetch<PayoutResponse>('/payouts', {
+          method: 'POST',
+          // Grossiste avec suffixe 099 → WALLET_LIMIT_REACHED
+          body: JSON.stringify({ boutiquierId: DEMO_B, grossisteId: G_ORA, amount: 50000, currency: 'XAF' }),
+        }),
+      }),
+    },
 
     // ── Remboursements ─────────────────────────────────────────────────────
     {
@@ -286,10 +301,28 @@ function SimulatorContent() {
                 </div>
               )}
               {result.data.status === 'ACCEPTED' && (
-                <p className="mt-3 rounded-lg bg-emerald-100 px-3 py-2 text-xs text-emerald-600">
-                  Statut final via webhook pawaPay · Écoutez{' '}
-                  <code className="font-bold">score:updated</code> sur Socket.io
-                </p>
+                <div className="mt-3 space-y-2">
+                  <p className="rounded-lg bg-emerald-100 px-3 py-2 text-xs text-emerald-600">
+                    Statut final via webhook pawaPay · Écoutez{' '}
+                    <code className="font-bold">score:updated</code> sur Socket.io
+                  </p>
+                  {/* Bouton USSD de secours — si le pop-up PIN ne s'affiche pas */}
+                  <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2">
+                    <p className="text-xs font-semibold text-amber-800">
+                      Pop-up PIN non reçu ?
+                    </p>
+                    <p className="mt-0.5 text-xs text-amber-700">
+                      Composez le code USSD manuellement sur votre téléphone MTN :
+                    </p>
+                    <a
+                      href="tel:*126#"
+                      className="mt-1.5 inline-flex items-center gap-1.5 rounded-lg bg-amber-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-amber-700 transition-colors"
+                    >
+                      <IconPhone size={13} />
+                      Composer *126# sur MTN
+                    </a>
+                  </div>
+                </div>
               )}
             </div>
           )}

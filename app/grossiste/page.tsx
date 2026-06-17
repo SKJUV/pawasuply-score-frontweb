@@ -7,8 +7,9 @@ import type { Grossiste, GrossisteOrder, PendingOrder, PayoutCompletedEvent } fr
 import Spinner from '@/components/Spinner';
 import ErrorAlert from '@/components/ErrorAlert';
 import SectionHeader from '@/components/SectionHeader';
-import { IconCheck, IconClock, IconLive } from '@/components/icons';
+import { IconCheck, IconClock, IconLive, IconArrowRight } from '@/components/icons';
 import { formatAmount, formatDateTime } from '@/lib/format';
+import Link from 'next/link';
 
 const PROVIDER_LABEL: Record<string, string> = {
   MTN_MOMO_CMR: 'MTN MoMo',
@@ -251,6 +252,7 @@ export default function GrossistePage() {
                       <Th label="Montant" right />
                       <Th label="Statut" />
                       <Th label="Date" />
+                      <Th label="" />
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-violet-50">
@@ -274,7 +276,16 @@ export default function GrossistePage() {
                         <td className="px-4 py-3 text-xs text-zinc-400">
                           {formatDateTime(p.created_at)}
                         </td>
-                      </tr>
+                        <td className="px-4 py-3 text-right">
+                          {p.boutiquier_id && (
+                            <Link
+                              href={`/boutiquier/${p.boutiquier_id}`}
+                              className="inline-flex items-center gap-1 rounded-lg bg-violet-50 px-2.5 py-1 text-xs font-semibold text-violet-700 hover:bg-violet-100 transition-colors"
+                            >
+                              Profil <IconArrowRight size={11} />
+                            </Link>
+                          )}
+                        </td>                      </tr>
                     ))}
                   </tbody>
                 </table>
