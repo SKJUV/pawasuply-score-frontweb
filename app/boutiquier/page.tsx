@@ -46,7 +46,11 @@ function BoutiquierSearchContent() {
   }
 
   useEffect(() => {
-    if (idParam) search(idParam);
+    if (idParam) {
+      Promise.resolve().then(() => {
+        search(idParam);
+      });
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

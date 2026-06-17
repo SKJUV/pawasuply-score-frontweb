@@ -2,8 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { subscribeLogs, clearLogs, type ApiLogEntry } from '@/lib/api';
-import Spinner from '@/components/Spinner';
-import { IconLogs, IconTrash, IconRefresh, IconChevronDown, IconLock, IconLive } from '@/components/icons';
+import { IconLogs, IconTrash, IconChevronDown, IconLock, IconLive } from '@/components/icons';
 
 const DEV_KEY = process.env.NEXT_PUBLIC_DEV_KEY ?? 'dev';
 
@@ -123,7 +122,7 @@ function AccessGate({ onUnlock }: { onUnlock: () => void }) {
       <div className="text-center">
         <h1 className="text-xl font-bold text-violet-900">Accès restreint</h1>
         <p className="mt-1 text-sm text-zinc-500">
-          Cette page est réservée aux développeurs et n'est pas visible des utilisateurs.
+          Cette page est réservée aux développeurs et n&apos;est pas visible des utilisateurs.
         </p>
       </div>
       <form onSubmit={submit} className="flex w-full max-w-xs flex-col gap-3">
@@ -158,12 +157,12 @@ export default function LogsPage() {
   const [logs,      setLogs]      = useState<ApiLogEntry[]>([]);
   const [filter,    setFilter]    = useState<'all' | 'ok' | 'error'>('all');
   const [search,    setSearch]    = useState('');
-  const [autoScroll] = useState(false);
-
   // Check session unlock
   useEffect(() => {
     if (typeof window !== 'undefined' && sessionStorage.getItem('ps_dev') === DEV_KEY) {
-      setUnlocked(true);
+      Promise.resolve().then(() => {
+        setUnlocked(true);
+      });
     }
   }, []);
 
@@ -222,7 +221,7 @@ export default function LogsPage() {
       <div className="flex items-start gap-3 rounded-xl border border-amber-100 bg-amber-50 px-4 py-3 text-sm text-amber-700">
         <IconLock className="mt-0.5 shrink-0 text-amber-500" size={16} />
         <p>
-          Cette page est <strong>protégée</strong> et n'est accessible qu'aux développeurs via la clé de session.
+          Cette page est <strong>protégée</strong> et n&apos;est accessible qu&apos;aux développeurs via la clé de session.
           Elle ne fait pas partie de la navigation utilisateur.
         </p>
       </div>
@@ -281,7 +280,7 @@ export default function LogsPage() {
             <IconLogs size={32} className="opacity-30" />
             <p className="text-sm">
               {logs.length === 0
-                ? 'Aucun appel API enregistré — naviguez dans l\'app pour générer des logs.'
+                ? 'Aucun appel API enregistré — naviguez dans l&apos;app pour générer des logs.'
                 : 'Aucun résultat pour ce filtre.'}
             </p>
           </div>

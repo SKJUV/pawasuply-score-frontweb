@@ -106,7 +106,7 @@ export default function HomePage() {
         {/* Quick search */}
         <div className="card p-5">
           <p className="mb-1 text-sm font-bold text-violet-900">Recherche rapide</p>
-          <p className="mb-4 text-xs text-zinc-400">Accédez directement au profil d'un boutiquier</p>
+          <p className="mb-4 text-xs text-zinc-400">Accédez directement au profil d&apos;un boutiquier</p>
           <form action="/boutiquier" method="get" className="flex gap-2">
             <div className="relative flex-1">
               <IconSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" size={15} />

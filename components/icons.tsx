@@ -193,3 +193,13 @@ export function IconClose({ className = '', size = 20 }: IconProps) {
     </svg>
   );
 }
+
+export function IconPhone({ className = '', size = 20 }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 20 20" fill="none" className={className} aria-hidden="true">
+      <rect x="5" y="2" width="10" height="16" rx="2" stroke="currentColor" strokeWidth="1.5"/>
+      <circle cx="10" cy="15.5" r="0.75" fill="currentColor"/>
+      <path d="M8 5h4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+    </svg>
+  );
+}

@@ -54,12 +54,21 @@ export default function GrossistePage() {
   const [initLoading, setInitLoading] = useState(true);
   const [error,       setError]       = useState<string | null>(null);
   const [toast,       setToast]       = useState<string | null>(null);
+  const [isDevMode, setIsDevMode] = useState(false);
 
   useEffect(() => {
     apiFetch<Grossiste[]>('/grossistes')
       .then((g) => { setGrossistes(g); if (g.length > 0) setSelected(g[0].id); })
       .catch((e) => setError((e as Error).message))
       .finally(() => setInitLoading(false));
+  }, []);
+
+  // detect dev session for showing debug controls (must run regardless of early returns)
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    Promise.resolve().then(() => {
+      setIsDevMode(sessionStorage.getItem('ps_dev') === (process.env.NEXT_PUBLIC_DEV_KEY ?? ''));
+    });
   }, []);
 
   const loadOrders = useCallback(async (id: string, d: number) => {
@@ -80,7 +89,13 @@ export default function GrossistePage() {
     }
   }, []);
 
-  useEffect(() => { if (selected) loadOrders(selected, days); }, [selected, days, loadOrders]);
+  useEffect(() => {
+    if (selected) {
+      Promise.resolve().then(() => {
+        loadOrders(selected, days);
+      });
+    }
+  }, [selected, days, loadOrders]);
 
   useEffect(() => {
     if (!selected) return;
@@ -107,6 +122,63 @@ export default function GrossistePage() {
         <Spinner size="lg" /><p className="text-sm">Chargement…</p>
       </div>
     );
+  }
+
+
+  async function markDelivered(pendingOrder: PendingOrder) {
+    if (!pendingOrder?.credit_id) return;
+    try {
+      setLoading(true);
+      const devKey = typeof window !== 'undefined' ? sessionStorage.getItem('ps_dev') ?? '' : '';
+      // Prefer calling a backend admin endpoint if available, otherwise call local dev route.
+      const endpoint = isDevMode ? `/api/dev/complete-payout?key=${encodeURIComponent(devKey)}` : `/payouts/${pendingOrder.credit_id}/complete`;
+      await apiFetch(endpoint, {
+        method: 'POST',
+        body: JSON.stringify({
+          creditId: pendingOrder.credit_id,
+          payoutId: pendingOrder.payout_id,
+          boutiquierName: pendingOrder.boutiquier_name,
+          boutiquierId: pendingOrder.boutiquier_id ?? undefined,
+          amount: pendingOrder.amount,
+          provider: pendingOrder.provider,
+        }),
+      });
+
+      // Update UI locally so the change is visible even if backend doesn't persist.
+      setPending((prev) => prev.filter((p) => p.credit_id !== pendingOrder.credit_id));
+      const now = new Date().toISOString();
+      const newOrder = {
+        id: pendingOrder.payout_id || pendingOrder.credit_id,
+        amount: String(pendingOrder.amount),
+        currency: 'XAF',
+        provider: pendingOrder.provider,
+        status: 'COMPLETED',
+        created_at: now,
+        updated_at: now,
+        boutiquier_name: pendingOrder.boutiquier_name,
+        boutiquier_phone: pendingOrder.phone_number,
+      };
+      setOrders((prev) => [newOrder, ...(prev || [])]);
+
+      // Emit simulated payout event via Socket.io so other clients refresh
+      try {
+        const socket = getSocket();
+        socket.emit('payout:completed', { payoutId: newOrder.id, boutiquierId: pendingOrder.boutiquier_id ?? null });
+      } catch {}
+
+      // Also dispatch a window event for in-tab listeners
+      try {
+        window.dispatchEvent(new CustomEvent('dev:payout:completed', { detail: { payoutId: newOrder.id, boutiquierId: pendingOrder.boutiquier_id ?? null } }));
+      } catch {}
+
+      setToast('Marqué comme livré (simulé en local)');
+      setTimeout(() => setToast(null), 4000);
+    } catch (e) {
+      setToast(`Erreur complétion: ${(e as Error).message}`);
+      setTimeout(() => setToast(null), 4000);
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -243,6 +315,16 @@ export default function GrossistePage() {
                           </span>
                         </td>
                         <td className="px-4 py-3 text-xs text-zinc-400">{formatDateTime(p.created_at)}</td>
+                          <td className="px-4 py-3 text-right">
+                            {isDevMode ? (
+                              <button
+                                onClick={() => markDelivered(p)}
+                                className="rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-700"
+                              >
+                                Marquer Livré
+                              </button>
+                            ) : null}
+                          </td>
                       </tr>
                     ))}
                   </tbody>

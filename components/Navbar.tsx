@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
@@ -20,10 +20,14 @@ const DEV_KEY = process.env.NEXT_PUBLIC_DEV_KEY ?? 'dev';
 export default function Navbar() {
   const pathname  = usePathname();
   const [open, setOpen] = useState(false);
+  const [isDevMode, setIsDevMode] = useState(false);
 
-  const isDevMode =
-    typeof window !== 'undefined' &&
-    sessionStorage.getItem('ps_dev') === DEV_KEY;
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    Promise.resolve().then(() => {
+      setIsDevMode(sessionStorage.getItem('ps_dev') === DEV_KEY);
+    });
+  }, []);
 
   return (
     <header className="sticky top-0 z-50 border-b border-violet-100 bg-white/95 backdrop-blur-md shadow-sm">
